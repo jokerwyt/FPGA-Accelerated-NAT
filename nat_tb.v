@@ -2,7 +2,7 @@ module nat_tb();
 
     `define NUM_TUPLES 1024
 
-    reg clk = 1, tuple_valid_i = 0, conn_ready_i = 0;
+    reg clk = 1, tuple_valid_i = 0, conn_ready_i = 1;
     wire tuple_ready_o, conn_valid_o;
     reg [31:0] tuple_data_i = 0;
     wire [31:0] conn_data_o;
@@ -18,15 +18,16 @@ module nat_tb();
     // output arrays
     reg [31:0] conn_buffer [0:`NUM_TUPLES - 1];
 
-    // state
+    // sender state
     reg [3:0] state = 0;
     reg [31:0] tuple_index = 0;
     // 0: sending src ip
     // 1: sending dst ip
     // 2: sending src port and dst port
     // 3: sending protocol
-    // 4: receiving result
-    // 5: all done
+
+    // receiver state
+    reg [31:0] result_index = 0;
 
     // randomize input arrays
     initial begin: init_arrays
@@ -58,13 +59,6 @@ module nat_tb();
             #1 clk = 1'b1;
         end
     end
-
-    // send tuple
-    initial begin
-        #1;
-        tuple_data_i = src_ip_buffer[0];
-        tuple_valid_i = 1'b1;
-    end
     
     // debug control
     initial begin
@@ -77,6 +71,12 @@ module nat_tb();
         $finish;
     end
 
+    // send tuples
+    initial begin
+        #1;
+        tuple_data_i = src_ip_buffer[0];
+        tuple_valid_i = 1'b1;
+    end
     always @(posedge clk) begin: send_tuple
         if (tuple_valid_i & tuple_ready_o) begin
             case (state)
@@ -93,9 +93,9 @@ module nat_tb();
                     state <= 3;
                 end
                 3: begin
-                    tuple_valid_i <= 1'b0;
-                    conn_ready_i <= 1'b1;
-                    state <= 4;
+                    tuple_data_i <= src_ip_buffer[tuple_index + 1];
+                    tuple_index <= tuple_index + 1;
+                    state <= 0;
                 end
             endcase
         end
@@ -104,16 +104,8 @@ module nat_tb();
     // receive result
     always @(posedge clk) begin: recv_result
         if (conn_valid_o & conn_ready_i) begin
-            conn_buffer[tuple_index] <= conn_data_o;
-            conn_ready_i <= 1'b0;
-            tuple_index <= tuple_index + 1;
-            if (tuple_index + 1 == `NUM_TUPLES) begin
-                state <= 5;
-            end else begin
-                tuple_data_i <= src_ip_buffer[tuple_index + 1];
-                tuple_valid_i <= 1'b1;
-                state <= 0;
-            end
+            conn_buffer[result_index] <= conn_data_o;
+            result_index <= result_index + 1;
         end
     end
 
@@ -121,7 +113,7 @@ module nat_tb();
     // verify results
     always @(posedge clk) begin: verify_results
         integer i, j;
-        if (state == 5) begin
+        if (result_index == `NUM_TUPLES) begin
             // check results
             // the same tuple should have the same result
             // different tuples should have different results
