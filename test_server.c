@@ -1,7 +1,7 @@
 // this should be run on the FPGA.
 
-#include <iostream>
-#include <cstring>
+#include <stdio.h>
+#include <string.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -11,37 +11,41 @@
 #include <netinet/ip.h>
 #include <sys/ioctl.h>
 #include <net/if.h>
+#include <errno.h>
 
 int main() {
     int sockfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
     if (sockfd < 0) {
-        std::cerr << "raw socket create error " << strerror(errno) << std::endl;
+        
+        fprintf(stderr, "raw socket create error %s", strerror(errno));
         return -1;
     }
 
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "eth1");
-    if (setsockopt(sockfd, SOL_SOCKET, SO_BINDTODEVICE, (void *)&ifr, sizeof(ifr)) < 0) {
-        std::cerr << "cannot bind to adapter: " << strerror(errno) << std::endl;
-        close(sockfd);
+    // bind the socket to the interface eth1
+    struct sockaddr_ll addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sll_family = AF_PACKET;
+    addr.sll_ifindex = if_nametoindex("eth1");
+    addr.sll_protocol = htons(ETH_P_ALL);
+    if (bind(sockfd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+        fprintf(stderr, "bind error %s", strerror(errno));
         return -1;
     }
 
     char buffer[8192];
 
-    while (true) {
+    while (1) {
         // get an intact frame
         int n = recv(sockfd, buffer, sizeof(buffer), 0);
 
         if (n < 0) {
-            std::cerr << "cannot receive data: " << strerror(errno) << std::endl;
+            fprintf(stderr, "cannot receive data: %s\n", strerror(errno));
             close(sockfd);
             return -1;
         }
 
         if (n > 4096) {
-            std::cerr << "frame too large: " << n << std::endl;
+            fprintf(stderr, "frame too large: %d\n", n);
             return -1;
         }
         

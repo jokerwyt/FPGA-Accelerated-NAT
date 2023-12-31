@@ -1,2 +1,4 @@
 *.vcd
 *.vvp
+test_server
+test_client

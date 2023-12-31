@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "*.ys": "asm-intel-x86-generic",
+        "ostream": "cpp",
+        "ioctl.h": "c",
+        "cerrno": "c"
+    }
+}
