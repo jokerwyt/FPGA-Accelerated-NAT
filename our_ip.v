@@ -59,20 +59,20 @@ module main (
             
             // Extract the 5-tuple from the input
             case (byte_cnt)
-                16: begin
+                8: begin
                     // Check if the packet is IP
                     if (s_axis_tdata[39:32] == 8'h08 && s_axis_tdata[47:40] == 8'h00) begin
                         is_ip <= 1;
                     end
                 end
-                24: begin
+                16: begin
                     protocol <= s_axis_tdata[63:56];
                 end
-                32: begin
+                24: begin
                     src_ip <= s_axis_tdata[47:16];
                     dst_ip[15:0] <= s_axis_tdata[63:48];
                 end
-                40: begin
+                32: begin
                     dst_ip[31:16] <= s_axis_tdata[15:0];
                     src_port <= s_axis_tdata[31:16];
                     dst_port <= s_axis_tdata[47:32];
@@ -99,6 +99,7 @@ module main (
                 tvalid <= 1;
                 m_axis_tdata[47:32] <= hash_value; // store hash value into dst_port
             end else begin
+                tvalid <= 0;
                 hash_stage <= 0;
                 probe_stage <= 1;
                 loc_to_probe <= hash_value + 1;
@@ -112,8 +113,12 @@ module main (
                 tvalid <= 1;
                 m_axis_tdata[47:32] <= loc_to_probe; // store hash value into dst_port
             end else begin
+                tvalid <= 0;
                 loc_to_probe <= loc_to_probe + 1;
             end
+        end else begin
+            // Reset tvalid
+            tvalid <= 0;
         end
     end
 

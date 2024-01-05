@@ -74,7 +74,7 @@ module our_ip_tb();
                 end
                 8: begin
                     s_axis_tdata[39:32] <= 8'h08;
-                    s_axis_tdata[47:40] <= 8'h00;
+                    s_axis_tdata[47:40] <= 8'h06;
                 end
                 16: begin
                     s_axis_tdata[63:56] <= protocol_buffer[tuple_index];
@@ -128,6 +128,10 @@ module our_ip_tb();
                         $display("Error: send src_port %d but receive %d", src_port_buffer[result_index], m_axis_tdata[31:16]);
                         $finish;
                     end
+                    if (dst_port_buffer[result_index] != m_axis_tdata[47:32]) begin
+                        $display("Error: send dst_port %d but receive %d", dst_port_buffer[result_index], m_axis_tdata[31:16]);
+                        $finish;
+                    end
                     conn_buffer[result_index] <= m_axis_tdata[47:32];
                 end
             endcase
@@ -142,37 +146,16 @@ module our_ip_tb();
     end
 
     always @(posedge clk) begin: verify_results
-        integer i, j;
+        integer i;
         if (result_index == `NUM_TUPLES) begin
             for (i = 0; i < `NUM_TUPLES; i = i + 1) begin
-                for (j = i + 1; j < `NUM_TUPLES; j = j + 1) begin
-                    if (src_ip_buffer[i] == src_ip_buffer[j] 
-                        && dst_ip_buffer[i] == dst_ip_buffer[j] 
-                        && src_port_buffer[i] == src_port_buffer[j] 
-                        && dst_port_buffer[i] == dst_port_buffer[j] 
-                        && protocol_buffer[i] == protocol_buffer[j]) begin
-
-                        if (conn_buffer[i] != conn_buffer[j]) begin
-                            $display("Error: tuple %d and tuple %d should have the same result", i, j);
-                            $display("tuple %d: %d", i, conn_buffer[i]);
-                            $display("tuple %d: %d", j, conn_buffer[j]);
-                            $display("end");
-                            $finish;
-                        end
-                    end else begin
-                        if (conn_buffer[i] == conn_buffer[j]) begin
-                            $display("Error: tuple %d and tuple %d should have different results", i, j);
-                            $display("tuple %d: %d", i, conn_buffer[i]);
-                            $display("tuple %d: %d", j, conn_buffer[j]);
-                            $display("end");
-                            $finish;
-                          end
-                    end
+                if (conn_buffer[i] != dst_port_buffer[i]) begin
+                    $display("Error %d", i);
+                    $finish;
                 end
             end
             $display("test passed");
             $finish;
         end
     end
-
 endmodule
