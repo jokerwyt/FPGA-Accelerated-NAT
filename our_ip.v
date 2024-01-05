@@ -73,6 +73,8 @@ module main (
                     // Check if the packet is IP
                     if (s_axis_tdata[39:32] == 8'h08 && s_axis_tdata[47:40] == 8'h00) begin
                         is_ip <= 1;
+                    end else begin
+                        is_ip <= 0;
                     end
                 end
                 16: begin

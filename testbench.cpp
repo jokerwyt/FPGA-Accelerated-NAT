@@ -60,8 +60,8 @@ struct Packet {
         data.resize(len);
     }
 
-    uint16_t* ethernet_type() {
-        return (uint16_t*) &data[12];
+    uint8_t* ethernet_type_first_byte() {
+        return (uint8_t*) &data[12];
     }
 
     uint16_t* ip_protocol() {
@@ -222,8 +222,8 @@ std::vector<Packet> gen_packet_ARP(int n = 10) {
             packet.data[j] = rand() & 0xff;
         }
 
-        packet.ethernet_type()[0] = 0x08;
-        packet.ethernet_type()[1] = 0x06;
+        packet.ethernet_type_first_byte()[0] = 0x08;
+        packet.ethernet_type_first_byte()[1] = 0x06;
 
         packets.push_back(packet);
     }
@@ -290,9 +290,9 @@ std::vector<Packet> process(std::vector<Packet> ingress_pkts, const size_t MAX_S
 
 void test_arp() {
     std::vector<Packet> packets;
-    packets = gen_packet_ARP();
+    packets = gen_packet_ARP(10000);
     
-    auto result = process(packets);
+    auto result = process(packets, 1000000);
 
     if (exact_compare(packets, result) == false) {
         exit(-1);
@@ -324,7 +324,22 @@ bool check_nat_funtionality(std::vector<Packet>& packets, std::vector<Packet>& r
             return false;
         }
 
+        // if ARP packet, exact compare.
+        if (packet.ethernet_type_first_byte()[0] == 0x08 && packet.ethernet_type_first_byte()[1] == 0x06) {
+            for (int j = 0; j < packet.data.size(); j++) {
+                if (packet.data[j] != recv_packet.data[j]) {
+                    std::cout << "ARP packet.data[j] != recv_packet.data[j]" << std::endl;
+                    std::cout << "packet idx = " << i << std::endl;
+                    std::cout << "byte idx = " << j << std::endl;
+                    std::cout << "packet.data[j] = " << (int) packet.data[j] << std::endl;
+                    std::cout << "recv_packet.data[j] = " << (int) recv_packet.data[j] << std::endl;
+                    return false;
+                }
+            }
+            continue;
+        }
 
+        // IP packets:
         // check payload (after byte[14+20+20], included)
         for (int j = 14 + 20 + 20; j < packet.data.size(); j++) {
             if (packet.data[j] != recv_packet.data[j]) {
@@ -381,14 +396,24 @@ std::vector<Packet> gen_packet_ip(int n = 50, int tuple5_cnt = 5) {
     for (int i = 0; i < n; i++) {
         Packet packet = Packet(14 + 20 + 20 + rand() % 100);
 
+
         // fill all bytes with random value.
         for (int j = 0; j < packet.data.size(); j++) {
             packet.data[j] = rand() & 0xff;
         }
 
-        packet.ethernet_type()[0] = 0x08;
-        packet.ethernet_type()[1] = 0x00;
-        packet.apply(tuple5s[rand() % tuple5_cnt]);
+        if (rand() % 100 < 50) {
+            // fill in ARP packet.
+            packet.ethernet_type_first_byte()[0] = 0x08;
+            packet.ethernet_type_first_byte()[1] = 0x06;
+            
+        } else {
+            // fill in IP packet.
+            packet.ethernet_type_first_byte()[0] = 0x08;
+            packet.ethernet_type_first_byte()[1] = 0x00;
+            packet.apply(tuple5s[rand() % tuple5_cnt]);
+        }
+
 
         packets.push_back(packet);
     }
@@ -411,6 +436,7 @@ void test_ip() {
 }
 
 int main(int argc, char** argv, char** env) {
+    srand(time(0));
     test_arp();
     test_ip();
 }
