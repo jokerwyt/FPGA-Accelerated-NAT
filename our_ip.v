@@ -13,7 +13,6 @@ module main (
     output m_axis_tvalid, 
     output s_axis_tready);
 
-
     reg [31:0] src_ip;
     reg [31:0] dst_ip; 
     reg [15:0] src_port; 
@@ -37,13 +36,16 @@ module main (
         ^ dst_port[hash_len-1:0] 
         ^ protocol[hash_len-1:0];
 
-
     reg [hash_len-1:0] loc_to_probe = 0;
     reg hash_stage = 0;
     reg probe_stage = 0;
 
     // map connection from id to tuple5. All zero represents no connection
     reg [WIDTH-1:0] conn_mem [0:id_space-1];
+
+    reg [hash_len-1:0] next_conn_idx = 0;
+    reg [hash_len-1:0] conn_idx [0:id_space-1];
+
     integer i;
     initial begin
         for (i = 0; i <= id_space; i = i + 1) begin
@@ -101,12 +103,22 @@ module main (
             end
         end else if (hash_stage) begin
             if (conn_mem[hash_value] == { src_ip, dst_ip, src_port, dst_port, protocol } || conn_mem[hash_value] == 0) begin
-                conn_mem[hash_value] <= { src_ip, dst_ip, src_port, dst_port, protocol };
+                if (conn_mem[hash_value] == 0) begin
+                    conn_mem[hash_value] <= { src_ip, dst_ip, src_port, dst_port, protocol };
+                    conn_idx[hash_value] <= next_conn_idx;
+                    next_conn_idx <= next_conn_idx + 1;
+
+                    // CAUTIOUS: now conn_idx[hash_value] has no value yet.
+                    m_axis_tdata[32+hash_len-1:32] <= next_conn_idx; // store hash value into dst_port
+                end else begin
+                    m_axis_tdata[32+hash_len-1:32] <= conn_idx[hash_value]; // store hash value into dst_port
+                end
+
                 hash_stage <= 0;
                 tready <= 1;
                 tvalid <= 1;
-                    m_axis_tdata[32+hash_len-1:32] <= hash_value; // store hash value into dst_port
-                end else begin
+                m_axis_tdata[48:32+hash_len] <= 0;
+            end else begin
                 tvalid <= 0;
                 hash_stage <= 0;
                 probe_stage <= 1;
@@ -115,11 +127,20 @@ module main (
         end else if (probe_stage) begin
             // linear probe
             if (conn_mem[loc_to_probe] == { src_ip, dst_ip, src_port, dst_port, protocol } || conn_mem[loc_to_probe] == 0) begin
-                conn_mem[loc_to_probe] <= { src_ip, dst_ip, src_port, dst_port, protocol };
+                if (conn_mem[loc_to_probe] == 0) begin
+                    conn_mem[loc_to_probe] <= { src_ip, dst_ip, src_port, dst_port, protocol };
+                    conn_idx[loc_to_probe] <= next_conn_idx;
+                    next_conn_idx <= next_conn_idx + 1;
+                    // CAUTIOUS: now conn_idx[hash_value] has no value yet.
+                    m_axis_tdata[32+hash_len-1:32] <= next_conn_idx; // store hash value into dst_port
+                end else begin
+                    m_axis_tdata[32+hash_len-1:32] <= conn_idx[loc_to_probe]; // store hash value into dst_port
+                end
+
                 probe_stage <= 0;
                 tready <= 1;
                 tvalid <= 1;
-                m_axis_tdata[32+hash_len-1:32] <= loc_to_probe; // store hash value into dst_port
+                m_axis_tdata[48:32+hash_len] <= 0;
             end else begin
                 tvalid <= 0;
                 loc_to_probe <= loc_to_probe + 1;
