@@ -1,3 +1,4 @@
+/* verilator lint_off DECLFILENAME */
 module main (
     input clk,
 
@@ -12,9 +13,6 @@ module main (
     output m_axis_tvalid, 
     output s_axis_tready);
 
-    `define WIDTH 104
-    `define hash_len 16
-    `define id_space (1<<`hash_len)
 
     reg [31:0] src_ip;
     reg [31:0] dst_ip; 
@@ -29,24 +27,34 @@ module main (
     assign s_axis_tready = tready;
     assign m_axis_tvalid = tvalid;
 
-    wire [`hash_len-1:0] hash_value = src_ip ^ dst_ip ^ src_port ^ dst_port ^ protocol;
-    reg [`hash_len-1:0] loc_to_probe = 0;
+    parameter hash_len = 6;
+    parameter id_space = 1 << hash_len;
+    parameter WIDTH = 104;
+
+    wire [hash_len-1:0] hash_value = src_ip[hash_len-1:0] 
+        ^ dst_ip[hash_len-1:0] 
+        ^ src_port[hash_len-1:0] 
+        ^ dst_port[hash_len-1:0] 
+        ^ protocol[hash_len-1:0];
+
+
+    reg [hash_len-1:0] loc_to_probe = 0;
     reg hash_stage = 0;
     reg probe_stage = 0;
 
     // map connection from id to tuple5. All zero represents no connection
-    reg [`WIDTH-1:0] conn_mem [0:`id_space];
+    reg [WIDTH-1:0] conn_mem [0:id_space-1];
     integer i;
     initial begin
-        for (i = 0; i <= `id_space; i = i + 1) begin
+        for (i = 0; i <= id_space; i = i + 1) begin
             conn_mem[i] = 0;
         end
-        m_axis_tlast <= 0;
+        m_axis_tlast = 0;
     end
 
     initial begin
-        $dumpvars(clk, s_axis_tvalid, s_axis_tdata, s_axis_tkeep, s_axis_tlast, s_axis_tready, tvalid, tready, 
-            m_axis_tdata, m_axis_tkeep, m_axis_tlast, m_axis_tvalid, byte_cnt, is_ip, protocol, hash_stage, probe_stage, loc_to_probe, hash_value);
+        // $dumpvars(clk, s_axis_tvalid, s_axis_tdata, s_axis_tkeep, s_axis_tlast, s_axis_tready, tvalid, tready, 
+        //    m_axis_tdata, m_axis_tkeep, m_axis_tlast, m_axis_tvalid, byte_cnt, is_ip, protocol, hash_stage, probe_stage, loc_to_probe, hash_value);
     end    
 
     always @(posedge clk) begin
@@ -97,8 +105,8 @@ module main (
                 hash_stage <= 0;
                 tready <= 1;
                 tvalid <= 1;
-                m_axis_tdata[47:32] <= hash_value; // store hash value into dst_port
-            end else begin
+                    m_axis_tdata[32+hash_len-1:32] <= hash_value; // store hash value into dst_port
+                end else begin
                 tvalid <= 0;
                 hash_stage <= 0;
                 probe_stage <= 1;
@@ -111,7 +119,7 @@ module main (
                 probe_stage <= 0;
                 tready <= 1;
                 tvalid <= 1;
-                m_axis_tdata[47:32] <= loc_to_probe; // store hash value into dst_port
+                m_axis_tdata[32+hash_len-1:32] <= loc_to_probe; // store hash value into dst_port
             end else begin
                 tvalid <= 0;
                 loc_to_probe <= loc_to_probe + 1;

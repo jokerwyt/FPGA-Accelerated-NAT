@@ -12,9 +12,13 @@ showdump: dump.vcd
 test_server: test_server.c
 	gcc -g -O0 -o test_server test_server.c
 
+verl: our_ip.v testbench.cpp
+	verilator -Wall --trace --cc our_ip.v --exe testbench.cpp
+	make -j -C obj_dir -f Vour_ip.mk Vour_ip
+	./obj_dir/Vour_ip
+	echo "See waveform.vcd for detailed."
 
 clean:
 	rm -f nat_tb.vvp
 	rm -f dump.vcd
 	rm -f test_server
-	rm -f test_client
