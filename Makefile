@@ -1,4 +1,4 @@
-all: test_server test_client
+# all: test_server test_client
 
 run: nat_tb.v nat.v
 	rm -f nat_tb.vvp
