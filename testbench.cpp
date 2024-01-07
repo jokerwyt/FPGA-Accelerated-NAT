@@ -4,6 +4,7 @@
 #include <verilated_vcd_c.h> //生成波形文件的API
 #include "obj_dir/Vour_ip.h" // verilated 后 our_ip模块的类定义
 #include <deque>
+#include <netinet/in.h>
 
 struct Tuple5 {
     uint32_t src_ip;
@@ -238,6 +239,7 @@ std::vector<Packet> process(std::vector<Packet> ingress_pkts, const size_t MAX_S
     vluint64_t sim_time = 0; // 用于计数时钟边沿
 
     Vour_ip *our = new Vour_ip;
+    our->reset = 1; //初始化reset信号
     VerilatedVcdC *m_trace = new VerilatedVcdC; //定义跟踪对象
 
     //接下来四行代码用于设置波形存储为VCD文件
@@ -358,11 +360,12 @@ bool check_nat_funtionality(std::vector<Packet>& packets, std::vector<Packet>& r
         if (nat_table.find(tuple5) == nat_table.end()) {
 
             // special guarantee
-            if (nat_table.size() != recv_tuple5.dst_port) {
-                printf("new connection mismatch: nat_table.size() != recv_tuple5.dst_port\n");
+            if (nat_table.size() != ntohs(recv_tuple5.dst_port)) {
+                printf("new connection mismatch: nat_table.size() != ntohs(recv_tuple5.dst_port)\n");
                 printf("packet idx = %d\n", i);
                 printf("nat_table.size() = %ld\n", nat_table.size());
                 printf("recv_tuple5.dst_port = %d\n", recv_tuple5.dst_port);
+                printf("ntohs(recv_tuple5.dst_port) = %d\n", ntohs(recv_tuple5.dst_port));
                 printf("tuple5 = %x %x %x %x %x\n", tuple5.src_ip, tuple5.dst_ip, tuple5.src_port, tuple5.dst_port, tuple5.protocol);
                 printf("recv_tuple5 = %x %x %x %x %x\n", recv_tuple5.src_ip, recv_tuple5.dst_ip, recv_tuple5.src_port, recv_tuple5.dst_port, recv_tuple5.protocol);
                 return false;

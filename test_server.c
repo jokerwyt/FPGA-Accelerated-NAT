@@ -91,10 +91,15 @@ int main(int argc, char *argv[]) {
             struct iphdr *ip = (struct iphdr *)(buffer + sizeof(struct ethhdr));
             if (ip->protocol == IPPROTO_TCP) {
                 printf(" TCP ");
+
+                char srcip[16], dstip[16];
+                strcpy(srcip, inet_ntoa(*(struct in_addr *)&ip->saddr));
+                strcpy(dstip, inet_ntoa(*(struct in_addr *)&ip->daddr));
+
                 printf(" (srcip, srcport) = (%s, %d), (dstip, dstport) = (%s, %d) ",
-                        inet_ntoa(*(struct in_addr *)&ip->saddr),
+                        srcip,
                         ntohs(*(unsigned short *)(buffer + sizeof(struct ethhdr) + sizeof(struct iphdr))),
-                        inet_ntoa(*(struct in_addr *)&ip->daddr),
+                        dstip,
                         ntohs(*(unsigned short *)(buffer + sizeof(struct ethhdr) + sizeof(struct iphdr) + 2)));
             }
         }
