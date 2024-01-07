@@ -7,6 +7,8 @@ module main (
     input s_axis_tlast,
     input s_axis_tvalid, 
 
+    input reset,
+
     output reg [63:0] m_axis_tdata, 
     output reg [7:0] m_axis_tkeep, 
     output reg m_axis_tlast,
@@ -60,7 +62,14 @@ module main (
     end    
 
     always @(posedge clk) begin
-        if (s_axis_tvalid && s_axis_tready) begin
+        if (reset) begin
+            tvalid <= 0;
+            tready <= 1;
+            byte_cnt <= 0;
+            is_ip <= 0;
+            hash_stage <= 0;
+            probe_stage <= 0;
+        end else if (s_axis_tvalid && s_axis_tready) begin
             // Copy the input to the output
             m_axis_tdata <= s_axis_tdata;
             m_axis_tkeep <= s_axis_tkeep;
