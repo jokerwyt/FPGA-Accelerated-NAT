@@ -62,7 +62,7 @@ module main (
     end    
 
     always @(posedge clk) begin
-        if (reset) begin
+        if (reset == 1'b0) begin
             tvalid <= 0;
             tready <= 1;
             byte_cnt <= 0;
