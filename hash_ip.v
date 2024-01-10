@@ -1,3 +1,6 @@
+/* verilator lint_off DECLFILENAME */
+/* verilator lint_off WIDTH */
+/* verilator lint_off UNUSED */
 module hash (
     input clk,
 
@@ -96,6 +99,7 @@ module hash (
                         // CAUTIOUS: now conn_idx_rx[loc_to_probe] has no value yet.
                         conn_data_0 <= next_conn_idx; 
                     end else begin
+			stage <= 0;
                         conn_data_0 <= conn_idx_rx[loc_to_probe]; 
                     end
                     conn_valid_0 <= 1;
@@ -119,6 +123,7 @@ module hash (
                     conn_data_1 <= conn_idx_tx[loc_to_probe];
                     conn_valid_1 <= 1;
                     tuple_ready_1 <= 0;
+		    stage <= 0;
                 end else begin
                     loc_to_probe <= loc_to_probe + 1;
                 end

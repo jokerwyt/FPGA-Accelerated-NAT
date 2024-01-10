@@ -194,7 +194,8 @@ bool exact_compare(std::vector<Packet>& packets_a, std::vector<Packet>& packets_
         Packet& bside = packets_b[i];
         if (aside.data.size() != bside.data.size()) {
             std::cout << "aside.data.size() != bside.data.size()" << std::endl;
-            std::cout << "pkt idx = " << i << std::endl;
+            std::cout << aside.data.size() << "    " <<  bside.data.size() << std::endl;
+	    std::cout << "pkt idx = " << i << std::endl;
             return false;
         }
 
@@ -322,7 +323,8 @@ bool check_nat_funtionality(std::vector<Packet>& packets, std::vector<Packet>& r
 
         if (packet.data.size() != recv_packet.data.size()) {
             std::cout << "packet.data.size() != recv_packet.data.size()" << std::endl;
-            std::cout << "packet idx = " << i << std::endl;
+            std::cout << packet.data.size() << "    " <<  recv_packet.data.size() << std::endl;
+	    std::cout << "packet idx = " << i << std::endl;
             return false;
         }
 

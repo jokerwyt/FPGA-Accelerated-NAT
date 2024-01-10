@@ -1,12 +1,13 @@
 /* verilator lint_off DECLFILENAME */
+/* verilator lint_off UNUSED */
 module main (
     input clk,
 
     output [127:0] tuple_data_o,
     output tuple_valid_o,
 
-    input [15:0] conn_data_i, // hash_len must not be greater than 16
-    input conn_valid_i,
+    input [15:0] conn_data_i; // hash_len must not be greater than 16
+    input conn_valid_i;
 
     input [63:0] s_axis_tdata, 
     input [7:0] s_axis_tkeep, 
@@ -20,6 +21,18 @@ module main (
     output reg m_axis_tlast,
     output m_axis_tvalid, 
     output s_axis_tready);
+
+    /*
+    // For testbench
+    wire [15:0] conn_data_i; // hash_len must not be greater than 16
+    wire conn_valid_i;
+
+    reg [127:0] unused_1 = 0;
+    reg unused_2 = 0;
+    wire [15:0] unused_3;
+    wire unused_4;
+    hash hash_ip(clk, tuple_data_o, tuple_valid_o, conn_data_i, conn_valid_i, unused_1, unused_2, unused_3, unused_4);
+    */
 
     reg [31:0] src_ip;
     reg [31:0] dst_ip; 
@@ -112,10 +125,11 @@ module main (
             if (conn_valid_i) begin
                 // CAUTIOUS: 
                 m_axis_tdata[port_position+15:port_position] <= 0;
-                m_axis_tdata[port_position+8+hash_len-1:port_position+8] <= conn_data_i;
+                m_axis_tdata[port_position+8+hash_len-1:port_position+8] <= conn_data_i[hash_len-1:0]; // hash_len<=8
                 tready <= 1;
                 tvalid <= 1;
                 tuple_valid <= 0;
+		hash_stage <= 0;
             end
         end else begin
             // Reset tvalid
