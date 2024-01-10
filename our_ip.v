@@ -2,6 +2,12 @@
 module main (
     input clk,
 
+    output [127:0] tuple_data_o,
+    output tuple_valid_o,
+
+    input [15:0] conn_data_i, // hash_len must not be greater than 16
+    input conn_valid_i,
+
     input [63:0] s_axis_tdata, 
     input [7:0] s_axis_tkeep, 
     input s_axis_tlast,
@@ -25,41 +31,22 @@ module main (
     reg is_ip = 0;
     reg tready = 1;
     reg tvalid = 0;
+    reg tuple_valid = 0;
     assign s_axis_tready = tready;
     assign m_axis_tvalid = tvalid;
+    assign tuple_data_o = { 24'h0, src_ip, dst_ip, src_port, dst_port, protocol };
+    assign tuple_valid_o = tuple_valid;
 
+    parameter port_position = 32; // dst_port=32, src_port=16
     parameter hash_len = 6; // >=8 need special treatment for byte order
-    parameter id_space = 1 << hash_len;
-    parameter WIDTH = 104;
-
-    wire [hash_len-1:0] hash_value = src_ip[hash_len-1:0] 
-        ^ dst_ip[hash_len-1:0] 
-        ^ src_port[hash_len-1:0] 
-        ^ dst_port[hash_len-1:0] 
-        ^ protocol[hash_len-1:0];
 
     reg [hash_len-1:0] loc_to_probe = 0;
     reg hash_stage = 0;
-    reg probe_stage = 0;
-
-    // map connection from id to tuple5. All zero represents no connection
-    reg [WIDTH-1:0] conn_mem [0:id_space-1];
-
-    reg [hash_len-1:0] next_conn_idx = 0;
-    reg [hash_len-1:0] conn_idx [0:id_space-1];
 
     integer i;
     initial begin
-        for (i = 0; i <= id_space; i = i + 1) begin
-            conn_mem[i] = 0;
-        end
         m_axis_tlast = 0;
     end
-
-    initial begin
-        // $dumpvars(clk, s_axis_tvalid, s_axis_tdata, s_axis_tkeep, s_axis_tlast, s_axis_tready, tvalid, tready, 
-        //    m_axis_tdata, m_axis_tkeep, m_axis_tlast, m_axis_tvalid, byte_cnt, is_ip, protocol, hash_stage, probe_stage, loc_to_probe, hash_value);
-    end    
 
     always @(posedge clk) begin
         if (reset == 1'b0) begin
@@ -68,7 +55,6 @@ module main (
             byte_cnt <= 0;
             is_ip <= 0;
             hash_stage <= 0;
-            probe_stage <= 0;
 
             // TODO: clear out conn_mem
             // but verilator says no.
@@ -107,6 +93,7 @@ module main (
                     src_port <= s_axis_tdata[31:16];
                     dst_port <= s_axis_tdata[47:32];
                     if (is_ip && protocol == 8'h06) begin
+                        tuple_valid <= 1;
                         hash_stage <= 1;
                         tready <= 0;
                         tvalid <= 0; 
@@ -122,50 +109,13 @@ module main (
                 is_ip <= 0;
             end
         end else if (hash_stage) begin
-            if (conn_mem[hash_value] == { src_ip, dst_ip, src_port, dst_port, protocol } || conn_mem[hash_value] == 0) begin
-                if (conn_mem[hash_value] == 0) begin
-                    conn_mem[hash_value] <= { src_ip, dst_ip, src_port, dst_port, protocol };
-                    conn_idx[hash_value] <= next_conn_idx;
-                    next_conn_idx <= next_conn_idx + 1;
-
-                    // CAUTIOUS: now conn_idx[hash_value] has no value yet.
-                    m_axis_tdata[40+hash_len-1:40] <= next_conn_idx; // store hash value into dst_port
-                end else begin
-                    m_axis_tdata[40+hash_len-1:40] <= conn_idx[hash_value]; // store hash value into dst_port
-                end
-
-                hash_stage <= 0;
+            if (conn_valid_i) begin
+                // CAUTIOUS: 
+                m_axis_tdata[port_position+15:port_position] <= 0;
+                m_axis_tdata[port_position+8+hash_len-1:port_position+8] <= conn_data_i;
                 tready <= 1;
                 tvalid <= 1;
-                m_axis_tdata[47:40+hash_len] <= 0;
-                m_axis_tdata[39:32] <= 0;
-            end else begin
-                tvalid <= 0;
-                hash_stage <= 0;
-                probe_stage <= 1;
-                loc_to_probe <= hash_value + 1;
-            end
-        end else if (probe_stage) begin
-            // linear probe
-            if (conn_mem[loc_to_probe] == { src_ip, dst_ip, src_port, dst_port, protocol } || conn_mem[loc_to_probe] == 0) begin
-                if (conn_mem[loc_to_probe] == 0) begin
-                    conn_mem[loc_to_probe] <= { src_ip, dst_ip, src_port, dst_port, protocol };
-                    conn_idx[loc_to_probe] <= next_conn_idx;
-                    next_conn_idx <= next_conn_idx + 1;
-                    // CAUTIOUS: now conn_idx[hash_value] has no value yet.
-                    m_axis_tdata[40+hash_len-1:40] <= next_conn_idx; // store hash value into dst_port
-                end else begin
-                    m_axis_tdata[40+hash_len-1:40] <= conn_idx[loc_to_probe]; // store hash value into dst_port
-                end
-
-                probe_stage <= 0;
-                tready <= 1;
-                tvalid <= 1;
-                m_axis_tdata[47:40+hash_len] <= 0;
-                m_axis_tdata[39:32] <= 0;
-            end else begin
-                tvalid <= 0;
-                loc_to_probe <= loc_to_probe + 1;
+                tuple_valid <= 0;
             end
         end else begin
             // Reset tvalid
