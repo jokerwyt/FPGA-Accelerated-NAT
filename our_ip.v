@@ -2,19 +2,18 @@
 /* verilator lint_off UNUSED */
 module main (
     input clk,
+    input reset,
 
     output [127:0] tuple_data_o,
     output tuple_valid_o,
 
-    input [15:0] conn_data_i; // hash_len must not be greater than 16
-    input conn_valid_i;
+    input [15:0] conn_data_i, // hash_len must not be greater than 16
+    input conn_valid_i,
 
     input [63:0] s_axis_tdata, 
     input [7:0] s_axis_tkeep, 
     input s_axis_tlast,
     input s_axis_tvalid, 
-
-    input reset,
 
     output reg [63:0] m_axis_tdata, 
     output reg [7:0] m_axis_tkeep, 
@@ -129,7 +128,7 @@ module main (
                 tready <= 1;
                 tvalid <= 1;
                 tuple_valid <= 0;
-		hash_stage <= 0;
+		        hash_stage <= 0;
             end
         end else begin
             // Reset tvalid

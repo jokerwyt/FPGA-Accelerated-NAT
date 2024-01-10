@@ -3,6 +3,7 @@
 /* verilator lint_off UNUSED */
 module hash (
     input clk,
+    input reset,
 
     input [127:0] tuple_data_0,
     input tuple_valid_0,
@@ -60,7 +61,14 @@ module hash (
         conn_valid_1 <= 0;
         tuple_ready_0 <= 1;
         tuple_ready_1 <= 1;
-        case (stage)
+        if (reset == 1'b0) begin
+            stage <= 0;
+            next_conn_idx <= 0;
+            for (i = 0; i <= id_space; i = i + 1) begin
+                conn_mem_rx[i] <= 0;
+                conn_mem_tx[i] <= 0;
+            end
+        end else begin case (stage)
             0: begin
                 if (tuple_valid_0 && tuple_ready_0) begin
                     stage <= 1;
@@ -99,7 +107,7 @@ module hash (
                         // CAUTIOUS: now conn_idx_rx[loc_to_probe] has no value yet.
                         conn_data_0 <= next_conn_idx; 
                     end else begin
-			stage <= 0;
+			            stage <= 0;
                         conn_data_0 <= conn_idx_rx[loc_to_probe]; 
                     end
                     conn_valid_0 <= 1;
@@ -123,12 +131,12 @@ module hash (
                     conn_data_1 <= conn_idx_tx[loc_to_probe];
                     conn_valid_1 <= 1;
                     tuple_ready_1 <= 0;
-		    stage <= 0;
+		            stage <= 0;
                 end else begin
                     loc_to_probe <= loc_to_probe + 1;
                 end
             end
-        endcase
+        endcase end
     end
 
 endmodule
