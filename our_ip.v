@@ -40,7 +40,7 @@ module main (
     reg [7:0] protocol;
 
     reg [31:0] byte_cnt = 0;
-    reg is_ip = 0;
+    reg is_custom_ip = 0;
     reg tready = 1;
     reg tvalid = 0;
     reg tuple_valid = 0;
@@ -65,7 +65,7 @@ module main (
             tvalid <= 0;
             tready <= 1;
             byte_cnt <= 0;
-            is_ip <= 0;
+            is_custom_ip <= 0;
             hash_stage <= 0;
 
             // TODO: clear out conn_mem
@@ -87,10 +87,10 @@ module main (
             case (byte_cnt)
                 8: begin
                     // Check if the packet is IP
-                    if (s_axis_tdata[39:32] == 8'h08 && s_axis_tdata[47:40] == 8'h00) begin
-                        is_ip <= 1;
+                    if (s_axis_tdata[39:32] == 8'h09 && s_axis_tdata[47:40] == 8'h00) begin
+                        is_custom_ip <= 1;
                     end else begin
-                        is_ip <= 0;
+                        is_custom_ip <= 0;
                     end
                 end
                 16: begin
@@ -104,7 +104,7 @@ module main (
                     dst_ip[31:16] <= s_axis_tdata[15:0];
                     src_port <= s_axis_tdata[31:16];
                     dst_port <= s_axis_tdata[47:32];
-                    if (is_ip && protocol == 8'h06) begin
+                    if (is_custom_ip && protocol == 8'h06) begin
                         tuple_valid <= 1;
                         hash_stage <= 1;
                         tready <= 0;
@@ -118,7 +118,7 @@ module main (
             if (s_axis_tlast) begin
                 // Reset the byte count
                 byte_cnt <= 0;
-                is_ip <= 0;
+                is_custom_ip <= 0;
             end
         end else if (hash_stage) begin
             if (conn_valid_i) begin
