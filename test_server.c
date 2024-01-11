@@ -85,8 +85,26 @@ int main(int argc, char *argv[]) {
             printf("[recv] ");
         }
 
-        if (ntohs(eth->h_proto) == ETH_P_IP) {
-            printf(" IP ");
+        if (ntohs(eth->h_proto) == 0x0800) {
+            printf(" IPv4  ");
+            // get the IP header
+            struct iphdr *ip = (struct iphdr *)(buffer + sizeof(struct ethhdr));
+            if (ip->protocol == IPPROTO_TCP) {
+                printf(" TCP ");
+
+                char srcip[16], dstip[16];
+                strcpy(srcip, inet_ntoa(*(struct in_addr *)&ip->saddr));
+                strcpy(dstip, inet_ntoa(*(struct in_addr *)&ip->daddr));
+
+                printf(" (srcip, srcport) = (%s, %d), (dstip, dstport) = (%s, %d) ",
+                        srcip,
+                        ntohs(*(unsigned short *)(buffer + sizeof(struct ethhdr) + sizeof(struct iphdr))),
+                        dstip,
+                        ntohs(*(unsigned short *)(buffer + sizeof(struct ethhdr) + sizeof(struct iphdr) + 2)));
+            }
+        } else 
+        if (ntohs(eth->h_proto) == 0x0900) {
+            printf(" CUSTOM  ");
             // get the IP header
             struct iphdr *ip = (struct iphdr *)(buffer + sizeof(struct ethhdr));
             if (ip->protocol == IPPROTO_TCP) {
