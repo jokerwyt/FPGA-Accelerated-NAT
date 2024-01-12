@@ -12,8 +12,8 @@ showdump: dump.vcd
 test_server: test_server.c
 	gcc -g -O0 -o test_server test_server.c -Wall
 
-test_client: test_client.cpp
-	g++ -g -O0 -o test_client test_client.cpp -Wall
+test_client: test_client.c
+	gcc -g -O0 -o test_client test_client.c -Wall
 
 verl: our_ip.v testbench.cpp
 	verilator -Wall --trace --cc our_ip.v hash_ip.v --exe testbench.cpp -CFLAGS -g -CFLAGS -Wall -CFLAGS -O0
