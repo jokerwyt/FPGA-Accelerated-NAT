@@ -205,15 +205,17 @@ int main(int argc, char *argv[]) {
                 fprintf(stderr, "too big frame len: larger than 8192\n");
                 return -1;
             }
-            if (n != pkt.length) {
-                printf("Recv a pkt with %d bytes, expected %d bytes. Skipped this pkt.\n", n, pkt.length);
-                continue;
-            }
 
             // check protocol == 0x0900
             if (recv_buf[12] == 0x09 && recv_buf[13] == 0x00) {
                 printf("Catch a pkt with protocol 0x0900\n");
+                if (n != pkt.length) {
+                    printf("pkt len does not match: %d != %d\n", n, pkt.length);
+                    return -1;
+                }
                 break;
+            } else {
+                // not our pkt, skip
             }
         }
 
@@ -228,6 +230,7 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "src-dst ip does not match\n");
             return -1;
         }
+
         if (memcmp(pkt.data + 14 + 16, recv_buf + 14 + 12, 4) != 0) {
             fprintf(stderr, "dst-src ip does not match\n");
             return -1;
@@ -241,6 +244,12 @@ int main(int argc, char *argv[]) {
 
         if (memcmp(pkt.data + 14 + 20 + 2, recv_buf + 14 + 20, 2) != 0) {
             fprintf(stderr, "dst-src tcp port does not match\n");
+            return -1;
+        }
+
+        // check payload
+        if (memcmp(pkt.data + 14 + 20 + 20, recv_buf + 14 + 20 + 20, payload_len) != 0) {
+            fprintf(stderr, "payload does not match\n");
             return -1;
         }
     }
