@@ -16,70 +16,26 @@
 #include <errno.h>
 #include <assert.h>
 #include <stdlib.h>
-
-int main(int argc, char *argv[]) {
-    int sockfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
-    if (sockfd < 0) {
-        fprintf(stderr, "raw socket create error %s", strerror(errno));
-        return -1;
-    }
-
-    // the default interface is eth1
-    // append the interface name to the end of the command if you want to use another one
-
-    char interface[128] = "eth1";
-
-    if (argc > 1) {
-        strcpy(interface, argv[1]);
-    }
+#include <pthread.h>
 
 
-    int socket_buffer_size = 1024 * 1024 * 10;
-    if (setsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, &socket_buffer_size, sizeof(socket_buffer_size)) < 0) {
-        fprintf(stderr, "setsockopt error %s", strerror(errno));
-        return -1;
-    }
+struct EchoServerArgs {
+    int sockfd;
+    int only_our;
+};
 
-    // bind the socket to the interface eth1
-    struct sockaddr_ll addr;
-    memset(&addr, 0, sizeof(addr));
-    addr.sll_family = AF_PACKET;
-    addr.sll_ifindex = if_nametoindex(interface);
+void* echo_server(void *args) {
+    struct EchoServerArgs *echo_server_args = (struct EchoServerArgs *)args;
+    int sockfd = echo_server_args->sockfd;
+    int only_our = echo_server_args->only_our;
 
-    if (addr.sll_ifindex == ENXIO) {
-        fprintf(stderr, "interface %s not found", interface);
-        return -1;
-    }
-    printf("watching interface %s\n", interface);
-
-    addr.sll_protocol = htons(ETH_P_ALL);
-    if (bind(sockfd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-        fprintf(stderr, "bind error %s", strerror(errno));
-        return -1;
-    }
+    free(args);
 
     const size_t buffer_size = 4096;
     char *buffer = (char *)malloc(buffer_size);
     if (buffer == NULL) {
         fprintf(stderr, "memory allocation error");
-        return -1;
-    }
-
-
-    // get the mac address of the open interface
-    struct ifreq ifr;
-    memset(&ifr, 0, sizeof(ifr));
-    strcpy(ifr.ifr_name, interface);
-    if (ioctl(sockfd, SIOCGIFHWADDR, &ifr) < 0) {
-        fprintf(stderr, "ioctl error %s", strerror(errno));
-        return -1;
-    }
-
-    // get env variable ONLY_OUR=0 or 1
-
-    int only_our = 0;
-    if (getenv("ONLY_OUR") != NULL) {
-        only_our = atoi(getenv("ONLY_OUR"));
+        exit(-1);
     }
 
     while (1) {
@@ -89,7 +45,7 @@ int main(int argc, char *argv[]) {
         if (n < 0) {
             fprintf(stderr, "cannot receive data: %s\n", strerror(errno));
             close(sockfd);
-            return -1;
+            exit(-1);
         }
 
         // if (n > 4096) {
@@ -157,22 +113,22 @@ int main(int argc, char *argv[]) {
                 *(unsigned short *)(buffer + sizeof(struct ethhdr) + sizeof(struct iphdr) + 2) = tmpport;
 
                 // send the pkt back
-                if (send(sockfd, buffer, n, 0) < 0) {
-                    fprintf(stderr, "send error %s", strerror(errno));
-                    return -1;
-                } else {
-                    // make sure protocol is 0x0900
-                    // assert(ntohs(((struct ethhdr *)buffer)->h_proto) == 0x0900);
+                // if (send(sockfd, buffer, n, 0) < 0) {
+                //     fprintf(stderr, "send error %s", strerror(errno));
+                //     exit(-1);
+                // } else {
+                //     // make sure protocol is 0x0900
+                //     // assert(ntohs(((struct ethhdr *)buffer)->h_proto) == 0x0900);
 
-                    // hexdump the pkt
-                    // printf("send back %d bytes\n", n);
-                    // for (int i = 0; i < n; i++) {
-                    //     printf("%02x ", (unsigned char)buffer[i]);
-                    //     if (i % 16 == 15) {
-                    //         printf("\n");
-                    //     }
-                    // }
-                }
+                //     // hexdump the pkt
+                //     // printf("send back %d bytes\n", n);
+                //     // for (int i = 0; i < n; i++) {
+                //     //     printf("%02x ", (unsigned char)buffer[i]);
+                //     //     if (i % 16 == 15) {
+                //     //         printf("\n");
+                //     //     }
+                //     // }
+                // }
 
             } else {
                 assert(0);
@@ -180,6 +136,81 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    return NULL;
+}
+
+int main(int argc, char *argv[]) {
+    int sockfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
+    if (sockfd < 0) {
+        fprintf(stderr, "raw socket create error %s", strerror(errno));
+        return -1;
+    }
+
+    // the default interface is eth1
+    // append the interface name to the end of the command if you want to use another one
+
+    char interface[128] = "eth1";
+
+    if (argc > 1) {
+        strcpy(interface, argv[1]);
+    }
+
+
+    int socket_buffer_size = 1024 * 1024 * 10;
+    if (setsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, &socket_buffer_size, sizeof(socket_buffer_size)) < 0) {
+        fprintf(stderr, "setsockopt error %s", strerror(errno));
+        return -1;
+    }
+
+    // bind the socket to the interface eth1
+    struct sockaddr_ll addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sll_family = AF_PACKET;
+    addr.sll_ifindex = if_nametoindex(interface);
+
+    if (addr.sll_ifindex == ENXIO) {
+        fprintf(stderr, "interface %s not found", interface);
+        return -1;
+    }
+    printf("watching interface %s\n", interface);
+
+    addr.sll_protocol = htons(ETH_P_ALL);
+    if (bind(sockfd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+        fprintf(stderr, "bind error %s", strerror(errno));
+        return -1;
+    }
+
+
+    // get the mac address of the open interface
+    struct ifreq ifr;
+    memset(&ifr, 0, sizeof(ifr));
+    strcpy(ifr.ifr_name, interface);
+    if (ioctl(sockfd, SIOCGIFHWADDR, &ifr) < 0) {
+        fprintf(stderr, "ioctl error %s", strerror(errno));
+        return -1;
+    }
+
+    // get env variable ONLY_OUR=0 or 1
+
+    int only_our = 0;
+    if (getenv("ONLY_OUR") != NULL) {
+        only_our = atoi(getenv("ONLY_OUR"));
+    }
+
+    // multiple thread to run echo_server
+    int thread_num = 4;
+    pthread_t threads[thread_num];
+    for (int i = 0; i < thread_num; i++) {
+        struct EchoServerArgs *echo_server_args = (struct EchoServerArgs *)malloc(sizeof(struct EchoServerArgs));
+        echo_server_args->sockfd = sockfd;
+        echo_server_args->only_our = only_our;
+        pthread_create(&threads[i], NULL, echo_server, echo_server_args);
+    }
+
+    while (1) {
+        sleep(1);
+    }
+    
     close(sockfd);
     return 0;
 }

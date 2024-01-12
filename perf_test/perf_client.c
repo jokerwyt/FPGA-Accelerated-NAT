@@ -17,6 +17,7 @@
 #include <assert.h>
 #include <netinet/tcp.h>
 #include <time.h>
+#include <pthread.h>
 
 char interface[128] = "enp2s0d1";
 int tuple5_cnt = 1;
@@ -73,6 +74,56 @@ void create_custom_L4_pkt(uint8_t *data, struct Tuple5 tuple5, int payload_len) 
     data[14 + 9] = tuple5.protocol;
 }
 
+struct SendPktsArgs {
+    int sockfd;
+    struct Packet *pkt;
+    int pktcnt;
+};
+
+void* send_pkts(void *args) {
+    struct SendPktsArgs *send_pkts_args = (struct SendPktsArgs *)args;
+    int sockfd = send_pkts_args->sockfd;
+    struct Packet *pkt = send_pkts_args->pkt;
+    int pktcnt = send_pkts_args->pktcnt;
+
+    for (int i = 0; i <= pktcnt; i++) { 
+        int idx = i % tuple5_cnt;
+
+        // send a packet
+        if (send(sockfd, pkt[idx].data, pkt[idx].length, 0) < 0) {
+            fprintf(stderr, "send error %s", strerror(errno));
+            exit(-1);
+        }
+
+        // wait for the response
+        // while (1) {
+        //     // printf("try to recv a new pkt...\n");
+        //     int n = recv(sockfd, recv_buf, 8192, 0);
+        //     if (n < 0) {
+        //         fprintf(stderr, "recv error %s", strerror(errno));
+        //         return -1;
+        //     }
+
+        //     if (n == 8192) {
+        //         fprintf(stderr, "too big frame len: larger than 8192\n");
+        //         return -1;
+        //     }
+
+        //     // check protocol == 0x0900
+        //     if (recv_buf[12] == 0x09 && recv_buf[13] == 0x00) {
+        //         // printf("Catch a pkt with protocol 0x0900\n");
+        //         if (n != pkt[idx].length) {
+        //             printf("pkt len does not match: %d != %d\n", n, pkt[idx].length);
+        //             return -1;
+        //         }
+        //         break;
+        //     } else {
+        //         // not our pkt, skip
+        //     }
+        // }
+    }
+    return NULL;
+}
 
 int main(int argc, char *argv[]) {
     printf("usage: ./test_client [-i <interface>] [-c <tuple5_cnt>] [-l <payload_len>] [-t <target_mac>]\n");
@@ -199,49 +250,27 @@ int main(int argc, char *argv[]) {
     struct timespec start, end;
     clock_gettime(CLOCK_MONOTONIC, &start);
 
-    for (int i = 0; i <= pktcnt; i++) {
-        int idx = i % tuple5_cnt;
+    // create 4 threads to send pkts
+    int thread_num = 4;
+    pthread_t threads[thread_num];
+    for (int i = 0; i < thread_num; i++) {
+        struct SendPktsArgs *send_pkts_args = (struct SendPktsArgs *)malloc(sizeof(struct SendPktsArgs));
+        send_pkts_args->sockfd = sockfd;
+        send_pkts_args->pkt = pkt;
+        send_pkts_args->pktcnt = pktcnt;
+        pthread_create(&threads[i], NULL, send_pkts, send_pkts_args);
+    }
 
-        // send a packet
-        if (send(sockfd, pkt[idx].data, pkt[idx].length, 0) < 0) {
-            fprintf(stderr, "send error %s", strerror(errno));
-            return -1;
-        }
-
-        // wait for the response
-        while (1) {
-            // printf("try to recv a new pkt...\n");
-            int n = recv(sockfd, recv_buf, 8192, 0);
-            if (n < 0) {
-                fprintf(stderr, "recv error %s", strerror(errno));
-                return -1;
-            }
-
-            if (n == 8192) {
-                fprintf(stderr, "too big frame len: larger than 8192\n");
-                return -1;
-            }
-
-            // check protocol == 0x0900
-            if (recv_buf[12] == 0x09 && recv_buf[13] == 0x00) {
-                // printf("Catch a pkt with protocol 0x0900\n");
-                if (n != pkt[idx].length) {
-                    printf("pkt len does not match: %d != %d\n", n, pkt[idx].length);
-                    return -1;
-                }
-                break;
-            } else {
-                // not our pkt, skip
-            }
-        }
-        
+    // join them
+    for (int i = 0; i < thread_num; i++) {
+        pthread_join(threads[i], NULL);
     }
 
     clock_gettime(CLOCK_MONOTONIC, &end);
     close(sockfd);
 
     printf("time elapsed: %ld ms\n", (end.tv_sec - start.tv_sec) * 1000 + (end.tv_nsec - start.tv_nsec) / 1000000);
-    printf("data sent %lf Gb\n", 1.0 * pktcnt * pkt_len * 8.0 / 1e9);
-    printf("avg thput: %lf Gbps\n",  1.0 * pktcnt * pkt_len * 8.0 / ((end.tv_sec - start.tv_sec) * 1e9 + end.tv_nsec - start.tv_nsec));
+    printf("data sent %lf Gb\n", 1.0 * thread_num * pktcnt * pkt_len * 8.0 / 1e9);
+    printf("avg thput: %lf Gbps\n",  1.0 * thread_num * pktcnt * pkt_len * 8.0 / ((end.tv_sec - start.tv_sec) * 1e9 + end.tv_nsec - start.tv_nsec));
     return 0;
 }
