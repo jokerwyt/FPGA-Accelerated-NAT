@@ -212,9 +212,11 @@ struct Recver {
             if (our->m_axis_tlast_tx) {
                 packets.push_back(current_packet);
                 Packet p = current_packet;
-                Tuple5 old_tuple = p.tuple5();
-                Tuple5 new_tuple = Tuple5(old_tuple.dst_ip, old_tuple.src_ip, old_tuple.dst_port, old_tuple.src_port, old_tuple.protocol);
-                p.apply(new_tuple);
+                if (p.ethernet_type_first_byte()[0] == 0x08 && p.ethernet_type_first_byte()[1] == 0x06) {} else {
+                    Tuple5 old_tuple = p.tuple5();
+                    Tuple5 new_tuple = Tuple5(old_tuple.dst_ip, old_tuple.src_ip, old_tuple.dst_port, old_tuple.src_port, old_tuple.protocol);
+                    p.apply(new_tuple);
+                }
                 echo_sender->packets.push_back(p);
                 current_packet = Packet(0);
             }
@@ -466,7 +468,7 @@ bool check_nat_funtionality(std::vector<Packet>& packets, std::vector<Packet>& r
     std::cout << "NAT table size = " << nat_table.size() << std::endl;
 
     for (int i = packets.size(); i < 2 * packets.size(); i++) {
-        Packet& packet = packets[i];
+        Packet& packet = packets[i - packets.size()];
         Packet& recv_packet = recv_packets[i];
 
         if (packet.data.size() != recv_packet.data.size()) {

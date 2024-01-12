@@ -50,10 +50,12 @@ module main (
     assign tuple_valid_o = tuple_valid;
 
     parameter port_position = 16; // dst_port=32, src_port=16
-    parameter hash_len = 6; // >=8 need special treatment for byte order
+    parameter hash_len = 8; // >=8 need special treatment for byte order
 
     reg [hash_len-1:0] loc_to_probe = 0;
     reg hash_stage = 0;
+
+    reg [15:0] packet_cnt = 0;
 
     integer i;
     initial begin
@@ -117,14 +119,14 @@ module main (
             byte_cnt <= byte_cnt + 8;
             if (s_axis_tlast) begin
                 // Reset the byte count
-                byte_cnt <= 0;
+                packet_cnt <= packet_cnt + 1;
+		byte_cnt <= 0;
                 is_custom_ip <= 0;
             end
         end else if (hash_stage) begin
             if (conn_valid_i) begin
                 // CAUTIOUS: 
-                m_axis_tdata[port_position+15:port_position] <= 0;
-                m_axis_tdata[port_position+8+hash_len-1:port_position+8] <= conn_data_i[hash_len-1:0]; // hash_len<=8
+                m_axis_tdata[port_position+15:port_position] <= conn_data_i;
                 tready <= 1;
                 tvalid <= 1;
                 tuple_valid <= 0;
