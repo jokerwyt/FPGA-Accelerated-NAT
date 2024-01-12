@@ -66,10 +66,12 @@ module hash (
         if (reset == 1'b0) begin
             stage <= 0;
             next_conn_idx <= 0;
-            for (i = 0; i <= id_space; i = i + 1) begin
+            /*
+	    for (i = 0; i <= id_space; i = i + 1) begin
                 conn_mem_rx[i] <= 0;
                 conn_mem_tx[i] <= 0;
             end
+	    */
         end else begin case (stage)
             0: begin
                 if (tuple_valid_0 && tuple_ready_0) begin

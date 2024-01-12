@@ -29,8 +29,8 @@ perf_client: perf_test/perf_client.c
 
 perf_test: perf_server perf_client
 
-test_3ip: 3ip_test.v our_ip.v hash_ip.v 3ip_testbench.cpp
-	verilator -Wall --trace --cc 3ip_test.v our_ip.v hash_ip.v --exe testbench.cpp -CFLAGS -g -CFLAGS -Wall -CFLAGS -O0
+test_3ip: our_ip.v our_ip_core.v hash_ip.v 3ip_testbench.cpp
+	verilator -Wall --trace --cc our_ip.v our_ip_core.v hash_ip.v --exe 3ip_testbench.cpp -CFLAGS -g -CFLAGS -Wall -CFLAGS -O0
 	make -j -C obj_dir -f Vour_ip.mk Vour_ip
 	# ./obj_dir/Vour_ip
 	echo "run ./obj_dir/Vour_ip and see waveform.vcd for detailed."

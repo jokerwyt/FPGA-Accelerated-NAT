@@ -135,7 +135,7 @@ struct Sender {
         size_t transmit = rest_byte < 8 ? rest_byte : 8;
         our->s_axis_tdata_tx = 0;
         for (int i = 0; i < transmit; i++) {
-            our->s_axis_tdata |= (uint64_t) packet.data[i] << (i * 8);
+            our->s_axis_tdata_tx |= (uint64_t) packet.data[i] << (i * 8);
         }
         our->s_axis_tlast_tx = packet.data.size() <= transmit;
         our->s_axis_tkeep_tx = (1 << transmit) - 1;
@@ -180,13 +180,13 @@ struct EchoSender {
         size_t transmit = rest_byte < 8 ? rest_byte : 8;
         our->s_axis_tdata_rx = 0;
         for (int i = 0; i < transmit; i++) {
-            our->s_axis_tdata |= (uint64_t) packet.data[i] << (i * 8);
+            our->s_axis_tdata_rx |= (uint64_t) packet.data[i] << (i * 8);
         }
         our->s_axis_tlast_rx = packet.data.size() <= transmit;
         our->s_axis_tkeep_rx = (1 << transmit) - 1;
     }
 
-}
+};
 
 struct Recver {
     std::deque<Packet> packets = {}; 
@@ -213,7 +213,7 @@ struct Recver {
                 packets.push_back(current_packet);
                 Packet p = current_packet;
                 Tuple5 old_tuple = p.tuple5();
-                Tuple5 new_tuple = Tuple5(old_tuple.src_ip, old_tuple.src_ip, old_tuple.dst_port, old_tuple.src_port, old_tuple.protocol);
+                Tuple5 new_tuple = Tuple5(old_tuple.dst_ip, old_tuple.src_ip, old_tuple.dst_port, old_tuple.src_port, old_tuple.protocol);
                 p.apply(new_tuple);
                 echo_sender->packets.push_back(p);
                 current_packet = Packet(0);
