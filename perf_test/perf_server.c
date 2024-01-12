@@ -21,13 +21,11 @@
 
 struct EchoServerArgs {
     int sockfd;
-    int only_our;
 };
 
 void* echo_server(void *args) {
     struct EchoServerArgs *echo_server_args = (struct EchoServerArgs *)args;
     int sockfd = echo_server_args->sockfd;
-    int only_our = echo_server_args->only_our;
 
     free(args);
 
@@ -54,40 +52,6 @@ void* echo_server(void *args) {
         // }
 
         struct ethhdr *eth = (struct ethhdr *)buffer;
-        
-        if (ntohs(eth->h_proto) != 0x0900 && only_our) {
-            // we skip the non-custom pkt
-            continue;
-        }
-
-        // check the src mac to determine whether send or recv
-
-        // compare the src mac address
-        // if (memcmp(eth->h_source, ifr.ifr_hwaddr.sa_data, 6) == 0) {
-        //     // send
-        //     printf("[send] ");
-        // } else {
-        //     printf("[recv] ");
-        // }
-
-        // if (ntohs(eth->h_proto) == 0x0800) {
-        //     printf(" IPv4  ");
-        //     // get the IP header
-        //     struct iphdr *ip = (struct iphdr *)(buffer + sizeof(struct ethhdr));
-        //     if (ip->protocol == IPPROTO_TCP) {
-        //         printf(" TCP ");
-
-        //         char srcip[16], dstip[16];
-        //         strcpy(srcip, inet_ntoa(*(struct in_addr *)&ip->saddr));
-        //         strcpy(dstip, inet_ntoa(*(struct in_addr *)&ip->daddr));
-
-        //         printf(" (srcip, srcport) = (%s, %d), (dstip, dstport) = (%s, %d) ",
-        //                 srcip,
-        //                 ntohs(*(unsigned short *)(buffer + sizeof(struct ethhdr) + sizeof(struct iphdr))),
-        //                 dstip,
-        //                 ntohs(*(unsigned short *)(buffer + sizeof(struct ethhdr) + sizeof(struct iphdr) + 2)));
-        //     }
-        // } else 
         if (ntohs(eth->h_proto) == 0x0900) {
             // printf(" CUSTOM  ");
             // get the IP header
@@ -192,18 +156,19 @@ int main(int argc, char *argv[]) {
 
     // get env variable ONLY_OUR=0 or 1
 
-    int only_our = 0;
-    if (getenv("ONLY_OUR") != NULL) {
-        only_our = atoi(getenv("ONLY_OUR"));
-    }
+    // int only_our = 0;
+    // if (getenv("ONLY_OUR") != NULL) {
+    //     only_our = atoi(getenv("ONLY_OUR"));
+    // }
 
     // multiple thread to run echo_server
     int thread_num = 4;
     pthread_t threads[thread_num];
+    printf("creating %d threads for echo server\n", thread_num);
+
     for (int i = 0; i < thread_num; i++) {
         struct EchoServerArgs *echo_server_args = (struct EchoServerArgs *)malloc(sizeof(struct EchoServerArgs));
         echo_server_args->sockfd = sockfd;
-        echo_server_args->only_our = only_our;
         pthread_create(&threads[i], NULL, echo_server, echo_server_args);
     }
 

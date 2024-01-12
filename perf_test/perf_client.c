@@ -253,6 +253,8 @@ int main(int argc, char *argv[]) {
     // create 4 threads to send pkts
     int thread_num = 4;
     pthread_t threads[thread_num];
+    printf("creating %d threads to send pkts...\n", thread_num);
+
     for (int i = 0; i < thread_num; i++) {
         struct SendPktsArgs *send_pkts_args = (struct SendPktsArgs *)malloc(sizeof(struct SendPktsArgs));
         send_pkts_args->sockfd = sockfd;
