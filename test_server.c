@@ -1,4 +1,5 @@
 // this should be run on the FPGA.
+// when recv pkt with eth_proto == 0x0900, it will send the pkt back to the sender.
 
 #include <stdio.h>
 #include <string.h>
@@ -12,6 +13,8 @@
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <errno.h>
+#include <assert.h>
+#include <stdlib.h>
 
 int main(int argc, char *argv[]) {
     int sockfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
@@ -59,6 +62,13 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+    // get env variable ONLY_OUR=0 or 1
+
+    int only_our = 0;
+    if (getenv("ONLY_OUR") != NULL) {
+        only_our = atoi(getenv("ONLY_OUR"));
+    }
+
     while (1) {
         // get an intact frame
         int n = recv(sockfd, buffer, sizeof(buffer), 0);
@@ -73,8 +83,13 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "frame too large: len = %d\n", n);
             return -1;
         }
-        
         struct ethhdr *eth = (struct ethhdr *)buffer;
+        
+        if (ntohs(eth->h_proto) != 0x0900 && only_our) {
+            // we skip the non-custom pkt
+            continue;
+        }
+
         // check the src mac to determine whether send or recv
 
         // compare the src mac address
@@ -119,6 +134,46 @@ int main(int argc, char *argv[]) {
                         ntohs(*(unsigned short *)(buffer + sizeof(struct ethhdr) + sizeof(struct iphdr))),
                         dstip,
                         ntohs(*(unsigned short *)(buffer + sizeof(struct ethhdr) + sizeof(struct iphdr) + 2)));
+            
+                // create a dummy echo pkt
+                // swap: src mac, dst mac, src ip, dst ip, src port, dst port
+
+                // swap src mac and dst mac
+                unsigned char tmp[6];
+                memcpy(tmp, eth->h_source, 6);
+                memcpy(eth->h_source, eth->h_dest, 6);
+                memcpy(eth->h_dest, tmp, 6);
+
+                // swap src ip and dst ip
+                unsigned int tmpip = ip->saddr;
+                ip->saddr = ip->daddr;
+                ip->daddr = tmpip;
+
+                // swap src port and dst port
+                unsigned short tmpport = *(unsigned short *)(buffer + sizeof(struct ethhdr) + sizeof(struct iphdr));
+                *(unsigned short *)(buffer + sizeof(struct ethhdr) + sizeof(struct iphdr)) = *(unsigned short *)(buffer + sizeof(struct ethhdr) + sizeof(struct iphdr) + 2);
+                *(unsigned short *)(buffer + sizeof(struct ethhdr) + sizeof(struct iphdr) + 2) = tmpport;
+
+                // send the pkt back
+                if (send(sockfd, buffer, n, 0) < 0) {
+                    fprintf(stderr, "send error %s", strerror(errno));
+                    return -1;
+                } else {
+                    // make sure protocol is 0x0900
+                    assert(ntohs(((struct ethhdr *)buffer)->h_proto) == 0x0900);
+
+                    // hexdump the pkt
+                    printf("send back %d bytes\n", n);
+                    for (int i = 0; i < n; i++) {
+                        printf("%02x ", (unsigned char)buffer[i]);
+                        if (i % 16 == 15) {
+                            printf("\n");
+                        }
+                    }
+                }
+
+            } else {
+                assert(0);
             }
         }
 

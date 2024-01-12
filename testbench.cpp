@@ -417,6 +417,8 @@ std::vector<Packet> gen_packet_ip(int n = 50, int tuple5_cnt = 5) {
             packet.ethernet_type_first_byte()[0] = 0x08;
             packet.ethernet_type_first_byte()[1] = 0x00;
             packet.apply(tuple5s[rand() % tuple5_cnt]);
+
+            // TODO: set ip_len field. no need for now.
         }
 
 

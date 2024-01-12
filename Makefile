@@ -1,4 +1,4 @@
-# all: test_server test_client
+all: test_server test_client
 
 run: nat_tb.v nat.v
 	rm -f nat_tb.vvp
@@ -10,7 +10,10 @@ showdump: dump.vcd
 	gtkwave dump.vcd
 
 test_server: test_server.c
-	gcc -g -O0 -o test_server test_server.c
+	gcc -g -O0 -o test_server test_server.c -Wall
+
+test_client: test_client.cpp
+	g++ -g -O0 -o test_client test_client.cpp -Wall
 
 verl: our_ip.v testbench.cpp
 	verilator -Wall --trace --cc our_ip.v hash_ip.v --exe testbench.cpp -CFLAGS -g -CFLAGS -Wall -CFLAGS -O0
