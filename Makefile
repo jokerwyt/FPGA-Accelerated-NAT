@@ -21,6 +21,14 @@ verl: our_ip.v testbench.cpp
 	# ./obj_dir/Vour_ip
 	echo "run ./obj_dir/Vour_ip and see waveform.vcd for detailed."
 
+perf_server: perf_test/perf_server.c
+	gcc -O0 -g -o perf_server perf_test/perf_server.c -Wall -lpthread
+
+perf_client: perf_test/perf_client.c
+	gcc -O0 -g -o perf_client perf_test/perf_client.c -Wall -lpthread
+
+perf_test: perf_server perf_client
+
 test_3ip: 3ip_test.v our_ip.v hash_ip.v 3ip_testbench.cpp
 	verilator -Wall --trace --cc 3ip_test.v our_ip.v hash_ip.v --exe testbench.cpp -CFLAGS -g -CFLAGS -Wall -CFLAGS -O0
 	make -j -C obj_dir -f Vour_ip.mk Vour_ip
@@ -31,5 +39,7 @@ clean:
 	rm -f nat_tb.vvp
 	rm -f dump.vcd
 	rm -f test_server
-	rm -rf obj_dir
 	rm -f test_client
+	rm -f perf_server
+	rm -f perf_client
+	rm -rf obj_dir
