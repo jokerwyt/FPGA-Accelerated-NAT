@@ -84,11 +84,11 @@ module hash (
                     outer_ip <= tuple_data_0[71:40];
                     inner_ip <= tuple_data_0[103:72];
                     loc_to_probe <= tuple_data_0[0+hash_len-1:0] 
-                        ^ tuple_data_0[8+hash_len-1:8]
-                        ^ tuple_data_0[24+hash_len-1:24]
+                        ^ tuple_data_0[16+hash_len-1:16]
+                        ^ tuple_data_0[32+hash_len-1:32]
                         ^ tuple_data_0[40+hash_len-1:40]
                         ^ tuple_data_0[72+hash_len-1:72];
-                end else if (tuple_valid_1) begin
+                end else if (tuple_valid_1 && tuple_ready_1) begin
                     stage <= 3;
                     protocol <= tuple_data_1[7:0];
                     inner_port[15:8] <= tuple_data_1[15:8];
@@ -98,8 +98,8 @@ module hash (
                     inner_ip <= tuple_data_1[71:40];
                     outer_ip <= tuple_data_1[103:72];
                     loc_to_probe <= tuple_data_1[0+hash_len-1:0] 
-                        ^ tuple_data_1[8+hash_len-1:8]
-                        ^ tuple_data_1[24+hash_len-1:24]
+                        ^ tuple_data_1[16+hash_len-1:16]
+                        ^ tuple_data_1[32+hash_len-1:32]
                         ^ tuple_data_1[40+hash_len-1:40]
                         ^ tuple_data_1[72+hash_len-1:72];
                 end

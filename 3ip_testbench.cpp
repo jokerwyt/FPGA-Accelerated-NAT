@@ -212,7 +212,7 @@ struct Recver {
             if (our->m_axis_tlast_tx) {
                 packets.push_back(current_packet);
                 Packet p = current_packet;
-                if (packet.ethernet_type_first_byte()[0] == 0x08 && packet.ethernet_type_first_byte()[1] == 0x06) {} else {
+                if (p.ethernet_type_first_byte()[0] == 0x08 && p.ethernet_type_first_byte()[1] == 0x06) {} else {
                     Tuple5 old_tuple = p.tuple5();
                     Tuple5 new_tuple = Tuple5(old_tuple.dst_ip, old_tuple.src_ip, old_tuple.dst_port, old_tuple.src_port, old_tuple.protocol);
                     p.apply(new_tuple);
