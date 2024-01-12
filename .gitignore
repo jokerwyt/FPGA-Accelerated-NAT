@@ -2,5 +2,7 @@
 *.vvp
 test_server
 test_client
+perf_server
+perf_client
 .vscode/
 obj_dir/
