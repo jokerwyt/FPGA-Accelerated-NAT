@@ -142,7 +142,7 @@ int main(int argc, char *argv[]) {
     }
 
     std::vector<uint8_t> buf(pkt.data.begin(), pkt.data.end());
-    std::vector<uint8_t> recv_buf(pkt.data.size());
+    std::vector<uint8_t> recv_buf(8192);
 
     for (int i = 0; i <= pktcnt; i++) {
         // send a packet
@@ -154,24 +154,25 @@ int main(int argc, char *argv[]) {
         // wait for the response
 
         while (1) {
-            printf("try to recv...\n");
-            int n = recv(sockfd, recv_buf.data(), sizeof(recv_buf), 0);
+            printf("try to recv a new pkt...\n");
+            int n = recv(sockfd, recv_buf.data(), recv_buf.size(), 0);
             if (n < 0) {
                 std::cerr << "recv error " << strerror(errno);
                 return -1;
             }
-             
+            if (n == (int) recv_buf.size()) {
+                std::cerr << "too big frame len: larger than" << recv_buf.size() << std::endl;
+                return -1;
+            }
             if (n != pkt_len) {
-                // printf("recv %d bytes, expected %d bytes\n", n, pkt_len);
-                continue;
-                // std::cerr << "recv error: recv " << n << " bytes, expected " << pkt_len << " bytes\n";
+                printf("recv %d bytes, expected %d bytes\n", n, pkt_len);
                 
-                // // hexdump the recv_buf
+                // hexdump the recv_buf
                 // for (int j = 0; j < n; j++) {
                 //     printf("%02x ", recv_buf[j]);
                 // }
                 // printf("\n");
-                // return -1;
+                continue;
             }
 
             // check protocol == 0x0900
@@ -205,6 +206,6 @@ int main(int argc, char *argv[]) {
     }
     close(sockfd);
 
-    printf("%d pkt test apassed\n", pktcnt);
+    printf("%d pkt test passed\n", pktcnt);
     return 0;
 }

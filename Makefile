@@ -26,3 +26,4 @@ clean:
 	rm -f dump.vcd
 	rm -f test_server
 	rm -rf obj_dir
+	rm -f test_client

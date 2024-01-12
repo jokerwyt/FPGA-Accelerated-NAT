@@ -163,13 +163,13 @@ int main(int argc, char *argv[]) {
                     assert(ntohs(((struct ethhdr *)buffer)->h_proto) == 0x0900);
 
                     // hexdump the pkt
-                    printf("send back %d bytes\n", n);
-                    for (int i = 0; i < n; i++) {
-                        printf("%02x ", (unsigned char)buffer[i]);
-                        if (i % 16 == 15) {
-                            printf("\n");
-                        }
-                    }
+                    // printf("send back %d bytes\n", n);
+                    // for (int i = 0; i < n; i++) {
+                    //     printf("%02x ", (unsigned char)buffer[i]);
+                    //     if (i % 16 == 15) {
+                    //         printf("\n");
+                    //     }
+                    // }
                 }
 
             } else {
