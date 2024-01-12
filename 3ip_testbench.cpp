@@ -213,7 +213,7 @@ struct Recver {
                 packets.push_back(current_packet);
                 Packet p = current_packet;
                 Tuple5 old_tuple = p.tuple5();
-                Tuple5 new_tuple = Tuple5(old_tuple.src_ip, old_tuple.src_ip, old_tuple.dst_port, old_tuple.src_port, old_tuple.protocol);
+                Tuple5 new_tuple = Tuple5(old_tuple.dst_ip, old_tuple.src_ip, old_tuple.dst_port, old_tuple.src_port, old_tuple.protocol);
                 p.apply(new_tuple);
                 echo_sender->packets.push_back(p);
                 current_packet = Packet(0);

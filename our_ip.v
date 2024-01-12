@@ -49,7 +49,7 @@ module main (
     assign tuple_data_o = { 24'h0, src_ip, dst_ip, src_port, dst_port, protocol };
     assign tuple_valid_o = tuple_valid;
 
-    parameter port_position = 32; // dst_port=32, src_port=16
+    parameter port_position = 16; // dst_port=32, src_port=16
     parameter hash_len = 6; // >=8 need special treatment for byte order
 
     reg [hash_len-1:0] loc_to_probe = 0;
@@ -123,8 +123,7 @@ module main (
         end else if (hash_stage) begin
             if (conn_valid_i) begin
                 // CAUTIOUS: 
-                m_axis_tdata[port_position+15:port_position] <= 0;
-                m_axis_tdata[port_position+8+hash_len-1:port_position+8] <= conn_data_i[hash_len-1:0]; // hash_len<=8
+                m_axis_tdata[port_position+15:port_position] <= conn_data_i;
                 tready <= 1;
                 tvalid <= 1;
                 tuple_valid <= 0;
