@@ -86,7 +86,7 @@ void* send_pkts(void *args) {
     struct Packet *pkt = send_pkts_args->pkt;
     int pktcnt = send_pkts_args->pktcnt;
 
-    for (int i = 0; i <= pktcnt; i++) { 
+    for (int i = 0; i < pktcnt; i++) { 
         int idx = i % tuple5_cnt;
 
         // send a packet
