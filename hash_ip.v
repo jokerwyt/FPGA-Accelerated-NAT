@@ -5,12 +5,14 @@ module hash (
     input clk,
     input reset,
 
+    // 0 for tx
     input [127:0] tuple_data_0,
     input tuple_valid_0,
 
     output reg [15:0] conn_data_0, 
     output reg conn_valid_0,
 
+    // 1 for rx
     input [127:0] tuple_data_1,
     input tuple_valid_1,
 
@@ -26,9 +28,9 @@ module hash (
 
     reg [2:0] stage = 0;
     // 0: wait for rx and tx
-    // 1: search in rx's table
-    // 2: insert value into tx's table
-    // 3: search in tx's table
+    // 1: search in tx's table
+    // 2: insert value into rx's table
+    // 3: search in rx's table
 
     reg [31:0] inner_ip;
     reg [31:0] outer_ip;
@@ -39,10 +41,10 @@ module hash (
 
     reg [WIDTH-1:0] conn_mem_rx [0:id_space-1];
     reg [hash_len-1:0] conn_idx_rx [0:id_space-1];
-    reg [hash_len-1:0] next_conn_idx = 0;
 
     reg [WIDTH-1:0] conn_mem_tx [0:id_space-1];
     reg [hash_len-1:0] conn_idx_tx [0:id_space-1];
+    reg [hash_len-1:0] next_conn_idx = 0;
 
     integer i;
     initial begin
@@ -97,18 +99,18 @@ module hash (
                 end
             end
             1: begin
-                if (conn_mem_rx[loc_to_probe] == { inner_ip, outer_ip, inner_port, outer_port, protocol } || conn_mem_rx[loc_to_probe] == 0) begin
-                    if (conn_mem_rx[loc_to_probe] == 0) begin
-                        // Insert value into rx's table
-                        conn_mem_rx[loc_to_probe] <= { inner_ip, outer_ip, inner_port, outer_port, protocol };
-                        conn_idx_rx[loc_to_probe] <= next_conn_idx;
+                if (conn_mem_tx[loc_to_probe] == { inner_ip, outer_ip, inner_port, outer_port, protocol } || conn_mem_tx[loc_to_probe] == 0) begin
+                    if (conn_mem_tx[loc_to_probe] == 0) begin
+                        // Insert value into tx's table
+                        conn_mem_tx[loc_to_probe] <= { inner_ip, outer_ip, inner_port, outer_port, protocol };
+                        conn_idx_tx[loc_to_probe] <= next_conn_idx;
                         stage <= 2;
                         loc_to_probe <= inner_ip ^ outer_ip ^ next_conn_idx ^ outer_port ^ protocol;
-                        // CAUTIOUS: now conn_idx_rx[loc_to_probe] has no value yet.
+                        // CAUTIOUS: now conn_idx_tx[loc_to_probe] has no value yet.
                         conn_data_0 <= next_conn_idx; 
                     end else begin
 			            stage <= 0;
-                        conn_data_0 <= conn_idx_rx[loc_to_probe]; 
+                        conn_data_0 <= conn_idx_tx[loc_to_probe]; 
                     end
                     conn_valid_0 <= 1;
                     tuple_ready_0 <= 0;
@@ -117,9 +119,9 @@ module hash (
                 end                
             end
             2: begin
-                if (conn_mem_tx[loc_to_probe] == 0) begin
-                    conn_mem_tx[loc_to_probe] <= { inner_ip, outer_ip, next_conn_idx, outer_port, protocol };
-                    conn_idx_tx[loc_to_probe] <= inner_port;
+                if (conn_mem_rx[loc_to_probe] == 0) begin
+                    conn_mem_rx[loc_to_probe] <= { inner_ip, outer_ip, next_conn_idx, outer_port, protocol };
+                    conn_idx_rx[loc_to_probe] <= inner_port;
                     next_conn_idx <= next_conn_idx + 1;
                     stage <= 0;
                 end else begin
@@ -127,8 +129,8 @@ module hash (
                 end
             end
             3: begin
-                if (conn_mem_tx[loc_to_probe] == { inner_ip, outer_ip, inner_port, outer_port, protocol }) begin
-                    conn_data_1 <= conn_idx_tx[loc_to_probe];
+                if (conn_mem_rx[loc_to_probe] == { inner_ip, outer_ip, inner_port, outer_port, protocol }) begin
+                    conn_data_1 <= conn_idx_rx[loc_to_probe];
                     conn_valid_1 <= 1;
                     tuple_ready_1 <= 0;
 		            stage <= 0;
