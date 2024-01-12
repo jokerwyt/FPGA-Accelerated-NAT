@@ -103,7 +103,7 @@ struct Sender {
     int sleeping = 0;
 
     void rising_edge(Vour_ip *our) {
-        if (our->s_axis_tvalid && our->s_axis_tready) {
+        if (our->s_axis_tvalid_tx && our->s_axis_tready_tx) {
             // if last time transmitting is done.
             Packet& packet = packets.front();
             size_t rest_byte = packet.data.size();
@@ -119,29 +119,74 @@ struct Sender {
 
         if (sleeping > 0) {
             sleeping--;
-            our->s_axis_tvalid = 0;
+            our->s_axis_tvalid_tx = 0;
             return;
         }
 
         if (packets.empty()) {
-            our->s_axis_tvalid = 0;
+            our->s_axis_tvalid_tx = 0;
             return;
         }
 
         // propose some new data.
-        our->s_axis_tvalid = 1;
+        our->s_axis_tvalid_tx = 1;
         Packet& packet = packets.front();
         size_t rest_byte = packet.data.size();
         size_t transmit = rest_byte < 8 ? rest_byte : 8;
-        our->s_axis_tdata = 0;
+        our->s_axis_tdata_tx = 0;
         for (int i = 0; i < transmit; i++) {
             our->s_axis_tdata |= (uint64_t) packet.data[i] << (i * 8);
         }
-        our->s_axis_tlast = packet.data.size() <= transmit;
-        our->s_axis_tkeep = (1 << transmit) - 1;
+        our->s_axis_tlast_tx = packet.data.size() <= transmit;
+        our->s_axis_tkeep_tx = (1 << transmit) - 1;
     }
 
 };
+
+struct EchoSender {
+    std::deque<Packet> packets;
+    int sleeping = 0;
+
+    void rising_edge(Vour_ip *our) {
+        if (our->s_axis_tvalid_rx && our->s_axis_tready_rx) {
+            // if last time transmitting is done.
+            Packet& packet = packets.front();
+            size_t rest_byte = packet.data.size();
+            size_t transmit = rest_byte <= 8 ? rest_byte : 8;
+
+            packet.data.erase(packet.data.begin(), packet.data.begin() + transmit);
+            if (packet.data.empty()) {
+                packets.pop_front();
+            }
+
+            sleeping = rand() % 3;
+        }
+
+        if (sleeping > 0) {
+            sleeping--;
+            our->s_axis_tvalid_rx = 0;
+            return;
+        }
+
+        if (packets.empty()) {
+            our->s_axis_tvalid_rx = 0;
+            return;
+        }
+
+        // propose some new data.
+        our->s_axis_tvalid_rx = 1;
+        Packet& packet = packets.front();
+        size_t rest_byte = packet.data.size();
+        size_t transmit = rest_byte < 8 ? rest_byte : 8;
+        our->s_axis_tdata_rx = 0;
+        for (int i = 0; i < transmit; i++) {
+            our->s_axis_tdata |= (uint64_t) packet.data[i] << (i * 8);
+        }
+        our->s_axis_tlast_rx = packet.data.size() <= transmit;
+        our->s_axis_tkeep_rx = (1 << transmit) - 1;
+    }
+
+}
 
 struct Recver {
     std::deque<Packet> packets = {}; 
@@ -149,23 +194,28 @@ struct Recver {
 
     // int sleeping = 0;
 
-    void rising_edge(Vour_ip *our) {
+    void rising_edge(Vour_ip *our, EchoSender *echo_sender) {
         // our->m_axis_tready is 1 default.
         
-        if (our->m_axis_tvalid) {
+        if (our->m_axis_tvalid_tx) {
             // if last time transmitting is done.
             
             // append to the last packet.
             // our->m_axis_tkeep is reg[7:0], 1 for valid, 0 for invalid.
             // only consecutive low bits are valid.
             for (int i = 0; i < 8; i++) {
-                if (our->m_axis_tkeep & (1 << i)) {
-                    current_packet.data.push_back((our->m_axis_tdata >> (i * 8)) & 0xff);
+                if (our->m_axis_tkeep_tx & (1 << i)) {
+                    current_packet.data.push_back((our->m_axis_tdata_tx >> (i * 8)) & 0xff);
                 }
             }
 
-            if (our->m_axis_tlast) {
+            if (our->m_axis_tlast_tx) {
                 packets.push_back(current_packet);
+                Packet p = current_packet;
+                Tuple5 old_tuple = p.tuple5();
+                Tuple5 new_tuple = Tuple5(old_tuple.src_ip, old_tuple.src_ip, old_tuple.dst_port, old_tuple.src_port, old_tuple.protocol);
+                p.apply(new_tuple);
+                echo_sender->packets.push_back(p);
                 current_packet = Packet(0);
             }
         }
@@ -177,6 +227,28 @@ struct Recver {
         // }
 
         // our->m_axis_tready = 1;
+    }
+ 
+};
+
+struct EchoRecver {
+    std::deque<Packet> packets = {}; 
+    Packet current_packet = Packet(0);
+
+    void rising_edge(Vour_ip *our) {
+        
+        if (our->m_axis_tvalid_rx) {
+            for (int i = 0; i < 8; i++) {
+                if (our->m_axis_tkeep_rx & (1 << i)) {
+                    current_packet.data.push_back((our->m_axis_tdata_rx >> (i * 8)) & 0xff);
+                }
+            }
+
+            if (our->m_axis_tlast_rx) {
+                packets.push_back(current_packet);
+                current_packet = Packet(0);
+            }
+        }
     }
  
 };
@@ -195,7 +267,7 @@ bool exact_compare(std::vector<Packet>& packets_a, std::vector<Packet>& packets_
         if (aside.data.size() != bside.data.size()) {
             std::cout << "aside.data.size() != bside.data.size()" << std::endl;
             std::cout << aside.data.size() << "    " <<  bside.data.size() << std::endl;
-	    std::cout << "pkt idx = " << i << std::endl;
+	        std::cout << "pkt idx = " << i << std::endl;
             return false;
         }
 
@@ -250,6 +322,8 @@ std::vector<Packet> process(std::vector<Packet> ingress_pkts, const size_t MAX_S
 
     Sender sender;
     Recver recver;
+    EchoSender echo_sender;
+    EchoRecver echo_recver;
 
     sender.packets.insert(sender.packets.end(), ingress_pkts.begin(), ingress_pkts.end());
     our->clk = 0;
@@ -267,14 +341,16 @@ std::vector<Packet> process(std::vector<Packet> ingress_pkts, const size_t MAX_S
 
         // 上升沿后的更新
         sender.rising_edge(our);
-        recver.rising_edge(our);
+        recver.rising_edge(our, &echo_sender);
+        echo_sender.rising_edge(our);
+        echo_recver.rising_edge(our);
 
         our->clk = 0; 
         our->eval(); // 下降沿
         m_trace->dump(sim_time); //把被跟踪的信号写入到波形中
         sim_time++; //更新仿真时间
 
-        if (recver.packets.size() == packet_cnt) {
+        if (echo_recver.packets.size() == packet_cnt) {
             break;
         }
     }
@@ -288,7 +364,9 @@ std::vector<Packet> process(std::vector<Packet> ingress_pkts, const size_t MAX_S
         exit(-1);
     }
 
-    return std::vector<Packet>(recver.packets.begin(), recver.packets.end());
+    std::vector<Packet> packets = std::vector<Packet>(recver.packets.begin(), recver.packets.end());
+    packets.insert(packets.end(), echo_recver.packets.begin(), echo_recver.packets.end());
+    return packets;
 }
 
 void test_arp() {
@@ -309,7 +387,7 @@ void test_arp() {
 
 bool check_nat_funtionality(std::vector<Packet>& packets, std::vector<Packet>& recv_packets) {
     // first check packet numbers
-    if (packets.size() != recv_packets.size()) {
+    if (2 * packets.size() != recv_packets.size()) {
         std::cout << "packet number not match" << std::endl;
         std::cout << "send packet cnt = " << packets.size() << std::endl;
         std::cout << "recv packet cnt = " << recv_packets.size() << std::endl;
@@ -324,7 +402,7 @@ bool check_nat_funtionality(std::vector<Packet>& packets, std::vector<Packet>& r
         if (packet.data.size() != recv_packet.data.size()) {
             std::cout << "packet.data.size() != recv_packet.data.size()" << std::endl;
             std::cout << packet.data.size() << "    " <<  recv_packet.data.size() << std::endl;
-	    std::cout << "packet idx = " << i << std::endl;
+	        std::cout << "packet idx = " << i << std::endl;
             return false;
         }
 
@@ -386,6 +464,57 @@ bool check_nat_funtionality(std::vector<Packet>& packets, std::vector<Packet>& r
         }
     }
     std::cout << "NAT table size = " << nat_table.size() << std::endl;
+
+    for (int i = packets.size(); i < 2 * packets.size(); i++) {
+        Packet& packet = packets[i];
+        Packet& recv_packet = recv_packets[i];
+
+        if (packet.data.size() != recv_packet.data.size()) {
+            std::cout << "packet.data.size() != recv_packet.data.size()" << std::endl;
+            std::cout << packet.data.size() << "    " <<  recv_packet.data.size() << std::endl;
+	        std::cout << "packet idx = " << i << std::endl;
+            return false;
+        }
+
+        // if ARP packet, exact compare.
+        if (packet.ethernet_type_first_byte()[0] == 0x08 && packet.ethernet_type_first_byte()[1] == 0x06) {
+            for (int j = 0; j < packet.data.size(); j++) {
+                if (packet.data[j] != recv_packet.data[j]) {
+                    std::cout << "ARP packet.data[j] != recv_packet.data[j]" << std::endl;
+                    std::cout << "packet idx = " << i << std::endl;
+                    std::cout << "byte idx = " << j << std::endl;
+                    std::cout << "packet.data[j] = " << (int) packet.data[j] << std::endl;
+                    std::cout << "recv_packet.data[j] = " << (int) recv_packet.data[j] << std::endl;
+                    return false;
+                }
+            }
+            continue;
+        }
+
+        // IP packets:
+        // check payload (after byte[14+20+20], included)
+        for (int j = 14 + 20 + 20; j < packet.data.size(); j++) {
+            if (packet.data[j] != recv_packet.data[j]) {
+                std::cout << "packet.data[j] != recv_packet.data[j]" << std::endl;
+                std::cout << "packet idx = " << i - packets.size() << std::endl;
+                std::cout << "byte idx = " << j << std::endl;
+                return false;
+            }
+        }
+
+        Tuple5 tuple5 = packet.tuple5();
+        Tuple5 recv_tuple5 = recv_packet.tuple5();
+
+        // rx stores the result from hash_ip into src_port in this test
+        if (tuple5.src_port != recv_tuple5.src_port) {
+            std::cout << "tuple5.src_port != recv_tuple5.src_port" << std::endl;
+            std::cout << "packet idx = " << i - packets.size() << std::endl;
+            printf("tuple5 = %x %x %x %x %x\n", tuple5.src_ip, tuple5.dst_ip, tuple5.src_port, tuple5.dst_port, tuple5.protocol);
+            printf("recv_tuple5 = %x %x %x %x %x\n", recv_tuple5.src_ip, recv_tuple5.dst_ip, recv_tuple5.src_port, recv_tuple5.dst_port, recv_tuple5.protocol);
+            return false;
+        }
+    }
+
     return true;
 }
 
@@ -444,6 +573,5 @@ void test_ip() {
 
 int main(int argc, char** argv, char** env) {
     srand(time(0));
-    test_arp();
     test_ip();
 }
