@@ -206,12 +206,13 @@ int main(int argc, char *argv[]) {
                 return -1;
             }
             if (n != pkt.length) {
-                printf("recv %d bytes, expected %d bytes\n", n, pkt.length);
+                printf("Recv a pkt with %d bytes, expected %d bytes. Skipped this pkt.\n", n, pkt.length);
                 continue;
             }
 
             // check protocol == 0x0900
             if (recv_buf[12] == 0x09 && recv_buf[13] == 0x00) {
+                printf("Catch a pkt with protocol 0x0900\n");
                 break;
             }
         }
