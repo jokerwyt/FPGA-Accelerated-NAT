@@ -127,7 +127,7 @@ module main (
                 tready <= 1;
                 tvalid <= 1;
                 tuple_valid <= 0;
-		        hash_stage <= 0;
+                hash_stage <= 0;
             end
         end else begin
             // Reset tvalid

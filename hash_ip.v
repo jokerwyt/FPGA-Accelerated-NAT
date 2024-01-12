@@ -116,7 +116,7 @@ module hash (
                         conn_data_0[15:8] <= next_conn_idx; 
                         replace_port <= next_conn_idx;
                     end else begin
-			            stage <= 0;
+                        stage <= 0;
                         conn_data_0[15:8] <= conn_idx_tx[loc_to_probe]; 
                     end
                     conn_valid_0 <= 1;
@@ -128,7 +128,8 @@ module hash (
             2: begin
                 if (conn_mem_rx[loc_to_probe] == 0) begin
                     conn_mem_rx[loc_to_probe] <= { inner_ip, outer_ip, replace_port, outer_port, protocol };
-                    conn_port_rx[loc_to_probe] <= inner_port;
+                    conn_port_rx[loc_to_probe][15:8] <= inner_port[7:0];
+                    conn_port_rx[loc_to_probe][7:0] <= inner_port[15:8];
                     next_conn_idx <= next_conn_idx + 1;
                     stage <= 0;
                 end else begin
@@ -140,7 +141,7 @@ module hash (
                     conn_data_1 <= conn_port_rx[loc_to_probe];
                     conn_valid_1 <= 1;
                     tuple_ready_1 <= 0;
-		            stage <= 0;
+                    stage <= 0;
                 end else begin
                     loc_to_probe <= loc_to_probe + 1;
                 end
