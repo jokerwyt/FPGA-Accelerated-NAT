@@ -22,10 +22,10 @@ verl: our_ip.v testbench.cpp
 	echo "run ./obj_dir/Vour_ip and see waveform.vcd for detailed."
 
 perf_server: perf_test/perf_server.c
-	gcc -O0 -g -o perf_server perf_test/perf_server.c -Wall
+	gcc -O0 -g -o perf_server perf_test/perf_server.c -Wall -lpthread
 
 perf_client: perf_test/perf_client.c
-	gcc -O0 -g -o perf_client perf_test/perf_client.c -Wall
+	gcc -O0 -g -o perf_client perf_test/perf_client.c -Wall -lpthread
 
 perf_test: perf_server perf_client
 
