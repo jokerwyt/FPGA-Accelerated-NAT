@@ -4,3 +4,4 @@ test_server
 test_client
 .vscode/
 obj_dir/
+sw_perf_client
