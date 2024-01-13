@@ -1,0 +1,20 @@
+root@plnx:/root/result# cat l{0,500,1000,1500,2000,2500,3000,3500,4000,4500,5000}.txt | grep avg
+avg thput: 0.150090 Gbps
+avg thput: 1.453819 Gbps
+avg thput: 2.591237 Gbps
+avg thput: 3.726810 Gbps
+avg thput: 4.824442 Gbps
+avg thput: 5.721252 Gbps
+avg thput: 6.630365 Gbps
+avg thput: 7.327467 Gbps
+avg thput: 7.866914 Gbps
+avg thput: 1.694518 Gbps
+avg thput: 1.856200 Gbps
+
+root@plnx:/root/result# cat c{1,4,16,64,256,1024}.txt | grep avg
+avg thput: 8.666835 Gbps
+avg thput: 8.803173 Gbps
+avg thput: 8.516329 Gbps
+avg thput: 8.519236 Gbps
+avg thput: 8.400585 Gbps
+avg thput: 7.814538 Gbps
