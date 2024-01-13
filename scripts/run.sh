@@ -24,11 +24,13 @@
 
 for c in 1 4 16 64 256 1024
 do
-    ./test_server.elf -i eth1 -c $c -l 1400 -t 98:f2:b3:c9:9c:c1 > result/c$c.txt
+    ./test_server.elf -i eth1 -c $c -l 4000 -t 98:f2:b3:c9:9c:c1 > result/c$c.txt
 done
 
 # ten data point, from 0 to 5000, step 500
 for l in 0 500 1000 1500 2000 2500 3000 3500 4000 4500 5000
 do
-    ./test_server.elf -i eth1 -c 16 -l $l -t 98:f2:b3:c9:9c:c1 > result/l$l.txt
+    ./test_server.elf -i eth1 -c 1024 -l $l -t 98:f2:b3:c9:9c:c1 > result/l$l.txt
 done
+
+# 0,500,1000,1500,2000,2500,3000,3500,4000,4500,5000
