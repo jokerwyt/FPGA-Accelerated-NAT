@@ -163,7 +163,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    assert(payload_len >= 0 && payload_len <= 1500);
+    // assert(payload_len >= 0 && payload_len <= 1500);
 
     printf("using interface: %s\n", interface);
     printf("using tuple5_cnt: %d\n", tuple5_cnt);

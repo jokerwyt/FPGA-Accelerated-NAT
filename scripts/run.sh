@@ -27,7 +27,8 @@ do
     ./test_server.elf -i eth1 -c $c -l 1400 -t 98:f2:b3:c9:9c:c1 > result/c$c.txt
 done
 
-for l in 0 200 400 600 800 1000 1200 1400
+# ten data point, from 0 to 8000, step 800
+for l in 0 800 1600 2400 3200 4000 4800 5600 6400 7200 8000
 do
     ./test_server.elf -i eth1 -c 16 -l $l -t 98:f2:b3:c9:9c:c1 > result/l$l.txt
 done
