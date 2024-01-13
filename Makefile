@@ -18,8 +18,12 @@ verl: our_ip.v testbench.cpp
 	# ./obj_dir/Vour_ip
 	echo "run ./obj_dir/Vour_ip and see waveform.vcd for detailed."
 
+sw_perf_client: sw_nat/sw_perf_client.c
+	gcc -g -O0 -o sw_perf_client sw_nat/sw_perf_client.c
+
 clean:
 	rm -f nat_tb.vvp
 	rm -f dump.vcd
 	rm -f test_server
 	rm -rf obj_dir
+	rm -f sw_perf_client
