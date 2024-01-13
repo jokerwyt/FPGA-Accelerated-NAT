@@ -145,7 +145,7 @@ void* send_pkts(void *args) {
         int idx = i % tuple5_cnt;
 
         // send a packet
-        size_t hash_idx = get_unique_id(ht, &tuple5s[i]);
+        size_t hash_idx = get_unique_id(ht, &tuple5s[idx]);
         
         // fill idx & 0xffff into the src port
         // races are everywhere, but since it's just a baseline we don't care.
