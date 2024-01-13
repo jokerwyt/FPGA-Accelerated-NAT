@@ -1,0 +1,7 @@
+root@plnx:/root/result# cat c{1,4,16,64,256,1024}.txt | grep avg
+avg thput: 4.316249 Gbps
+avg thput: 4.274445 Gbps
+avg thput: 4.068599 Gbps
+avg thput: 4.174453 Gbps
+avg thput: 4.031206 Gbps
+avg thput: 4.061431 Gbps
