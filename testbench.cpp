@@ -427,9 +427,9 @@ std::vector<Packet> gen_packet_ip(int n = 50, int tuple5_cnt = 5) {
 void test_ip() {
     std::vector<Packet> packets;
 
-    int pkt_cnt = 10000;
+    int pkt_cnt = 1000000;
 
-    packets = gen_packet_ip(pkt_cnt, 64);
+    packets = gen_packet_ip(pkt_cnt, 1024);
     auto result = process(packets, pkt_cnt * (256 / 8 + 64));
 
     if (check_nat_funtionality(packets, result) == false) {

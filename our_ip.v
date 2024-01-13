@@ -28,7 +28,7 @@ module main (
     assign s_axis_tready = tready;
     assign m_axis_tvalid = tvalid;
 
-    parameter hash_len = 6; // >=8 need special treatment for byte order
+    parameter hash_len = 10;
     parameter id_space = 1 << hash_len;
     parameter WIDTH = 104;
 
@@ -36,7 +36,7 @@ module main (
         ^ dst_ip[hash_len-1:0] 
         ^ src_port[hash_len-1:0] 
         ^ dst_port[hash_len-1:0] 
-        ^ protocol[hash_len-1:0];
+        ^ {2'b0, protocol[7:0]};
 
     reg [hash_len-1:0] loc_to_probe = 0;
     reg hash_stage = 0;
@@ -88,8 +88,9 @@ module main (
             // Extract the 5-tuple from the input
             case (byte_cnt)
                 8: begin
-                    // Check if the packet is IP
-                    if (s_axis_tdata[39:32] == 8'h08 && s_axis_tdata[47:40] == 8'h00) begin
+                    // Check if the packet is custom IP
+                    // CAUTIOUS: temporary change this to 0x0900
+                    if (s_axis_tdata[39:32] == 8'h09 && s_axis_tdata[47:40] == 8'h00) begin 
                         is_ip <= 1;
                     end else begin
                         is_ip <= 0;
@@ -123,22 +124,23 @@ module main (
             end
         end else if (hash_stage) begin
             if (conn_mem[hash_value] == { src_ip, dst_ip, src_port, dst_port, protocol } || conn_mem[hash_value] == 0) begin
+                m_axis_tdata[47:32] <= 0;
                 if (conn_mem[hash_value] == 0) begin
                     conn_mem[hash_value] <= { src_ip, dst_ip, src_port, dst_port, protocol };
                     conn_idx[hash_value] <= next_conn_idx;
                     next_conn_idx <= next_conn_idx + 1;
 
                     // CAUTIOUS: now conn_idx[hash_value] has no value yet.
-                    m_axis_tdata[40+hash_len-1:40] <= next_conn_idx; // store hash value into dst_port
+                    m_axis_tdata[47:40] <= next_conn_idx[7:0]; // store hash value into dst_port
+                    m_axis_tdata[32+hash_len-8-1:32] <= next_conn_idx[hash_len-1:8];
                 end else begin
-                    m_axis_tdata[40+hash_len-1:40] <= conn_idx[hash_value]; // store hash value into dst_port
+                    m_axis_tdata[47:40] <= conn_idx[hash_value][7:0]; // store hash value into dst_port
+                    m_axis_tdata[32+hash_len-8-1:32] <= conn_idx[hash_value][hash_len-1:8];
                 end
 
                 hash_stage <= 0;
                 tready <= 1;
                 tvalid <= 1;
-                m_axis_tdata[47:40+hash_len] <= 0;
-                m_axis_tdata[39:32] <= 0;
             end else begin
                 tvalid <= 0;
                 hash_stage <= 0;
@@ -148,21 +150,22 @@ module main (
         end else if (probe_stage) begin
             // linear probe
             if (conn_mem[loc_to_probe] == { src_ip, dst_ip, src_port, dst_port, protocol } || conn_mem[loc_to_probe] == 0) begin
+                m_axis_tdata[47:32] <= 0;
                 if (conn_mem[loc_to_probe] == 0) begin
                     conn_mem[loc_to_probe] <= { src_ip, dst_ip, src_port, dst_port, protocol };
                     conn_idx[loc_to_probe] <= next_conn_idx;
                     next_conn_idx <= next_conn_idx + 1;
                     // CAUTIOUS: now conn_idx[hash_value] has no value yet.
-                    m_axis_tdata[40+hash_len-1:40] <= next_conn_idx; // store hash value into dst_port
+                    m_axis_tdata[47:40] <= next_conn_idx[7:0]; // store hash value into dst_port
+                    m_axis_tdata[32+hash_len-8-1:32] <= next_conn_idx[hash_len-1:8];
                 end else begin
-                    m_axis_tdata[40+hash_len-1:40] <= conn_idx[loc_to_probe]; // store hash value into dst_port
+                    m_axis_tdata[47:40] <= conn_idx[loc_to_probe][7:0]; // store hash value into dst_port
+                    m_axis_tdata[32+hash_len-8-1:32] <= conn_idx[loc_to_probe][hash_len-1:8];
                 end
 
                 probe_stage <= 0;
                 tready <= 1;
                 tvalid <= 1;
-                m_axis_tdata[47:40+hash_len] <= 0;
-                m_axis_tdata[39:32] <= 0;
             end else begin
                 tvalid <= 0;
                 loc_to_probe <= loc_to_probe + 1;
