@@ -8,10 +8,10 @@
 % ●软件NAT的实现方式对性能的影响
 % ●实验不够详尽？还有什么关键的实验：
 
-In this section, we will discuss some possible improvement in our system design and evaluation.
+In this section, we will discuss some possible improvements in our system design and evaluation.
 
-\textbf{Better evaluation method: bypassing PS.} Our evaluation result shows that the weak performance of ZCU102 hardware prevents us from fully investigate the potential of our hardware design. Thus, bypassing the PS part of the board may be a better choice to get precise evaluation result. To be specific, the received Ethernet packets should being send back to another SFP interface after they are processed by our custom IPs in the PL logic, instead of passing them to those weak ARM CPUs.
+\textbf{Better evaluation method: bypassing PS.} Our evaluation result shows that the weak performance of ZCU102 PS hardware prevents it from fully investigating the potential of our hardware design. Thus, bypassing the PS part of the board may be a better choice to get precise evaluation results. To be specific, the received Ethernet packets should be sent back to another SFP interface after they are processed by our custom IPs in the PL logic, instead of passing them to those weak ARM CPUs.
 
-\textbf{More efficient NAT design.} The NAT we implemented use little resource at a cost of wasting more cycles. In fact, we can utilize the hardware parallelism by introducing structure like full-associated cache in our NAT table which promise one cycle latency.
+\textbf{More efficient NAT design.} The NAT we implemented uses little resources at the cost of wasting more cycles. We can utilize the hardware parallelism by introducing structures like a full-associated cache in our NAT table which promises one cycle latency.
 
-\textbf{Lack of connection state management.} A functional NAT should track connection states to release the NAT table entries in time. Due to time limit, we just discuss and come up with a possible design and did not implement this part. 
+\textbf{Lack of connection state management.} A functional NAT should track connection states to release the NAT table entries in time. Due to the project time limit, we just discussed and came up with a possible design but did not implement this part. 

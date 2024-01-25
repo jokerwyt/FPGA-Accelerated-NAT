@@ -1,43 +1,70 @@
 
-We show our implementation in this section, including testbed setting, the whole workflow and implementation result such as code lines and FPGA resource consumption. We implement our design based on Xilinx official example of Ethernet 10/25G system.
+We show our implementation in this section, including the testbed setting, the whole workflow, and implementation results such as code lines and FPGA resource consumption. We implement our design based on Xilinx's official example of the Ethernet 10/25G system.
 \subsection{Testbed Configuration}
-We implement our NAT with AMD (Xilinx) Zynq UltraScale+ MPSoC ZCU102 (called the board later). The evaluation setup includes the board, a router and a desktop machine.
+We implemented our NAT with AMD (Xilinx) Zynq UltraScale+ MPSoC ZCU102 (called the board later). The evaluation setup includes the board, a router, and a desktop machine.
 We run a Linux \todo{Version} on the four PS ARM cores of the board. 
-The desktop runs Ubuntu 18.04 equipped with a Nvidia (Mellanox) ConnectX-3 
-with driver version \todo{??} whose line rate is 10Gbps. The MTU is configured as 9000B.
-The performance of router is not critical since we only use it to ssh connect to the board.
+The desktop runs Ubuntu 18.04 equipped with a Nvidia (Mellanox) ConnectX-3, 
+whose line rate reaches 10Gbps, with \verb|mlx4| driver version \verb|4.14.142-ubwins+|. The MTU is configured as 9000B to get full performance.
+The performance of the router is not critical since we only use it to ssh connect to the board.
+
+
+
+
 
 \textbf{Network Topology.} 
-The board and the on-board NIC of desktop are both connected to the router and 
+The board and the on-board NIC of the desktop are both connected to the router and 
 are configured under the same subnet. 
-For data plane, we connect the SPF interface of the board and a interface of ConnectX-3 back-to-back to fully investigate the potential of our FPGA NAT.
+For the data plane, we connect the SPF interface of the board and an interface of ConnectX-3 back-to-back to fully investigate the potential of our FPGA NAT.
 
 \subsection{Implementation Workflow}
 
-We elaborate our detailed implementation workflow, which includes Verilog design and testing, Vivado block design, Petalinux image building, testbed deployment and Vitis cross-compile in this subsection. We use Vivado 19.02, Vitis 19.02, and Petalinux 19.02. Figure 1 shows our workflow.
 
-\textbf{Hardware implementation and testing.} We use Verilog to implement our design in about 300 lines of code. We use Verilator to test the correctness of our implementation.
-The testing code is about 1.5k lines in C++.
+\begin{figure*}[b]
+    \label{fig:workflow}
+    \centering
+    \includegraphics[width=500pt]{images/implworkflow.pdf}
+    \caption{Our implementation workflow. }
+    \Description{111}
+\end{figure*}
 
-\textbf{Vivado block design and synthesis.} We use Vivado to insert our Verilog implementation as custom IPs, and then synthesis, implement, and generate bitstream. Finally we export the hardware to an \verb|.xsa| file. The delta of resource consumption between the original example and our modified design is \todo{????????}. 
+We elaborate on our detailed implementation workflow, which includes Verilog design and testing, Vivado block design, Petalinux image building, testbed deployment, and Vitis cross-compile in this subsection. We use Vivado 19.02, Vitis 19.02, and Petalinux 19.02. Figure \ref{fig:workflow} shows our workflow.
+
+\textbf{Hardware implementation and testing.} We use Verilog and Verilator to implement and test our design in about 300 lines of Verilog code and 1.5k lines of C++ code. 
+
+
+\begin{table}
+    \caption{ZCU102 Resource Consumption}
+    \label{tab:res}
+    \begin{tabular}{c|cccc}
+      \toprule
+        &LUT&FF&BRAM&DSP\\
+      \midrule
+      Origin & 18923 & 18315 & 139.5 & 0\\
+      Ours (table size 1024) & 33373 & 47067 & 142.0 & 0\\
+
+      \midrule
+      Ours \slash Total Resource (\%) & 12.18 & 8.59 & 15.57 & 0\\
+
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\textbf{Vivado block design and synthesis.} We use Vivado to insert our Verilog implementation as custom IPs, and then synthesize, implement, and generate bitstream. Finally, we export the hardware to an \verb|.xsa| file. 
+The resource consumption is shown in Table \ref{tab:res}.
+The whole design (with table size 1024, original 10/25G Ethernet Subsystem included) consumes 12.18\% LUTs, 0.58\% LUTRAMs, 8.59\% FFs, 15.57\% BRAMs.
+The delta of resource consumption between the original example and our modified design is 14464 LUTs, 13252 FF, 2.5 BRAM, and 0 DSP.
 % Note that ConnectX-3 has the feature of L2, L3, and L4 checksum offloading. 
 % We cannot disable it directly due to driver bugs.
 Note that we use a custom Ethernet protocol number rather than \verb|0x0800| to prevent potential complexities such as NIC checksum-offloading and Linux kernel sanity check. Therefore, we do not need to insert CSU IP.
 
-\textbf{Petalinux image building.} Petalinux is a tool to build tiny embedded linux images.
+\textbf{Petalinux image building.} Petalinux is a tool to build tiny embedded Linux images.
 The built image can be placed into an SD card to boot up the whole board. 
-We build the images following the official tutorial in a Ubuntu 18.04 docker container over AMD Ryzen 7 7700 (4.8Ghz full core). It takes up to several hours.
+We build the images following the official tutorial in a Ubuntu 18.04 docker container over AMD Ryzen 7 7700 (4.8 Ghz full core). It takes up to several hours.
 
-\textbf{Vitis cross-compilation.} We need to cross-compile the C++ source code since the CPUs on the board are ARM core. We do it via Vitis, and scp the generated ELF file to the board directly.
-
-
+\textbf{Vitis cross-compilation.} We need to cross-compile the C++ source code since the CPUs on the board are ARM cores. Vitis provides cross-compile support for different Zynq platforms. The generated ELF file can be sent to the board via \verb|scp| directly.
 
 
-\begin{figure*}[ht]
-    \centering
-    \includegraphics[width=500pt]{images/implworkflow.pdf}
-    \caption{Our implementation workflow. }
-\end{figure*}
+
 
 
 % ○FPGA型号
@@ -52,3 +79,6 @@ We build the images following the official tutorial in a Ubuntu 18.04 docker con
 % ○表大小1024，MTU9000
 % ○因为用了不同协议号，所以不需要插入CSU IP
 % ○Detailed setting
+
+% The whole design (with table size 1024, original 10/25G Ethernet Subsystem included) consumes 12.18\% LUTs, 0.58\% LUTRAMs, 8.59\% FFs, 15.57\% BRAMs.
+% The delta of resource consumption between the original example and our modified design is 14464 LUTs, 13252 FF, 2.5 BRAM, and 0 DSP.
