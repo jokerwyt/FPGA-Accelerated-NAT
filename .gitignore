@@ -6,3 +6,4 @@ perf_server
 perf_client
 .vscode/
 obj_dir/
+.DS_Store

@@ -1,0 +1,38 @@
+# LaTeX generated files
+*.aux
+*.log
+*.synctex.gz
+*.toc
+*.lof
+*.lot
+*.out
+*.dvi
+*.fdb_latexmk
+*.fls
+*.pdfsync
+*.gz
+
+# LaTeX editor temporary files
+.vscode/
+*.swp
+*.bak
+*.backup
+*.bbl
+*.blg
+*.brf
+*.glo
+*.idx
+*.ilg
+*.ind
+*.loa
+*.lof
+*.lol
+*.lot
+*.out
+*.toc
+*.xdy
+*.tdo
+
+# OS generated files
+.DS_Store
+Thumbs.db
