@@ -3,11 +3,11 @@
     \includegraphics[width=\linewidth]{images/design.png}
     \caption{System design}
 \end{figure*}
-    This chapter presents our system design, including the original block design \textbf{pl\_eth\_10g}, and the two custom IP cores that we add. 
+    We show our system design in this section, including the original block design in \textbf{Xilinx's official example of the Ethernet 10/25G system}, and the two custom IP cores that we add. 
 
 \subsection{Original block design}
 
-    \subsubsection{Components}\
+    \textbf{Components}\
 
     The design integrates the processing power of the PS, the flexibility of programmable logic in the PL, and specific components like DMA, MAC, and GTH to implement a 10GbE interface on the ZCU102 evaluation board.
 
@@ -21,7 +21,7 @@
     \item {GTH (Gigabit Transceivers)}: GTH transceivers are used for high-speed serial data communication. They facilitate the transmission and reception of data at gigabit rates.
     \end{itemize}
 
-    \subsubsection{Data flow}\
+    \textbf{Data flow}\
 
     MAC and GTH are responsible for the transmission of data between the FPGA and the external network. Upon receiving incoming data from MAC and GTH, the DMA takes control of the data transfer process, and moves the data to the designated location in Memory. This stored data can be further processed by the processor or other components of the system.
 
@@ -29,15 +29,15 @@
 
     Based on the original block design, we introduce a NAT(Network Address Translation) IP to intercept the communication between the MAC/GTH and DMA for our goal. Our NAT IP modifies the IP and TCP headers of the packets according to the NAT rules, and maintains a bidirectional hash table to store the mappings between LAN 5 tuple and WAN 5 tuple.
 
-    \subsubsection{Hash Function}\
+    \textbf{Hash Function}\
 
     The NAT IP uses XOR operation on the 5-tuple \emph{(source IP, source port, destination IP, destination port, protocol)} as its hash function. This approach provides a quick and effective way to generate hash values for mapping.
 
-    \subsubsection{Linear Probing}\
+    \textbf{Linear Probing}\
 
     To handle conflicts within the hash table, the NAT IP utilizes linear probing as a collision resolution strategy. In case of a hash collision, the algorithm linearly searches for the next available slot in the hash table until an empty slot is found.
 
-    \subsubsection{Biderectional Hash Table}\
+    \textbf{Biderectional Hash Table}\
 
     Our NAT IP incorporates two hash tables. One is for the mapping from LAN 5-tuple to WAN 5-tuple, and the other maintains the reverse mapping.
 
@@ -45,14 +45,14 @@
 
     For packets from WAN to LAN, the map from WAN 5-tuple to LAN 5-tuple should exist in the normal case. So the NAT IP can modify the packet header accordingly.
 
-    \subsubsection{Round Robin Arbiter}\
+    \textbf{Round Robin Arbiter}\
 
     Round Robin Arbiter is a type of arbiter that try to serve each requester in a circular order, ensuring that each requester can obtain resources fairly. To avoid conflicts caused by TX and RX accessing the bidirectional hash table at the same time, we use a Round Robin Arbiter in the NAT IP to control the access to the hash table. 
 
     We use two signals, $ready\_tx$ and $ready\_rx$, to decide which requester should be served. One ready signal  is unset only in the next cycle after the end of service for the corresponding requester. In this way, a waiting requester can get served immediately after the end of service for the other. So Round Robin Arbiter achieves fair access control to the bidirectional hash table, avoiding conflicts between TX and RX.
     
 \subsection{CSU IP}
-    The CSU(Checksum Update) IP is a custom IP core that recalculates the TCP checksum of the packets after the NAT IP modifies the IP header. It consists of four modules, Calc, FIFO1, FIFO2, and Align. 
+    The CSU (Checksum Update) IP is a custom IP core that recalculates the TCP checksum of the packets after the NAT IP modifies the IP header. It consists of four modules, Calc, FIFO1, FIFO2, and Align. 
 
     The Calc module computes the new checksum value based on the modified packet, and outputs the new checksum value and the original packet to FIFO1 and FIFO2 respectively.
 
