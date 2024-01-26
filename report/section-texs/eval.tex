@@ -45,7 +45,7 @@ Figure \ref{fig:thputconn} shows the relationship between throughput and the num
 \subsection{Interpretation}
 We draw three main conclusions from our results:
 \begin{itemize}
-    \item \todo{\textbf{The performance of HW NAT is 7.7\% higher than SW NAT.}}
+    \item \textbf{The performance of HW NAT is 7.7\% higher than SW NAT.} In Figure \ref{fig:thputpktsize}, the maximum throughput of HW NAT is 8.48 Gbps, and the maximum throughput of SW NAT is 7.87 Gbps.
     \item \textbf{Figure \ref{fig:thputpktsize} shows that SW NAT is a bottleneck and HW NAT is not.}
     In Figure \ref{fig:thputpktsize}, we can see that SW NAT has a performance gap with no NAT, indicating that SW NAT is a bottleneck that degrades the overall system performance. We can also see that HW NAT has a performance improvement compared to SW NAT, indicating that hardware implementation has better performance than software. And there's almost no performance gap between HW NAT and no NAT, which indicates that hardware implementation has little impact on the original system performance.
     \item \textbf{Figure \ref{fig:thputconn} shows that SW NAT is unscalable and HW NAT is scalable.}
