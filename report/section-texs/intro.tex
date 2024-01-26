@@ -24,10 +24,10 @@ Under the circumstances above, the Field Programmable Gate Array (FPGA) comes in
 It allows users to implement custom hardware logic including NAT. Therefore, in this project, we explore the possibility of implementing NAT in FPGA and show the performance gain from hardware-oriented design. 
 
 \textbf{Prior works.} We survey prior works including other hardware offloading approaches and advanced NAT designs. Programmable switches with P4 language support line-rate match-action processing by which NAT can be implemented naturally. 
-\footnote[1]{https://github.com/p4lang/switch/blob/master/p4src/nat.p4}
-Some high-performance NICs such as Nvidia (Mellanox) ConnectX-4/5/6 can support NAT offloading itself with proper configuration. However, they are all wired NICs for Data Center Network.
+\footnote{https://github.com/p4lang/switch/blob/master/p4src/nat.p4}
+Some high-performance NICs such as Nvidia (Mellanox) ConnectX-4/5/6 can support NAT offloading itself with proper configuration. However, they are all wired NICs for the data center network.
 There are also already some trials to implement NAT on FPGA such as the NetFPGA platform. More details can be found at the footnote link.
-\footnote[2]{https://www.cl.cam.ac.uk/~osc22/docs/edv10\_nat\_fpga.pdf}
+\footnote{https://www.cl.cam.ac.uk/~osc22/docs/edv10\_nat\_fpga.pdf}
 
 \textbf{Evaluation Results.} In our evaluation, FPGA-based NAT shows a 10\% speed-up in throughput than software-based NAT and better scalability over connection numbers.
 
