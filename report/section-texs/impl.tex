@@ -2,9 +2,9 @@
 We show our implementation in this section, including the testbed setting, the whole workflow, and implementation results such as code lines and FPGA resource consumption. We implement our design based on Xilinx's official example of the Ethernet 10/25G system.
 \subsection{Testbed Configuration}
 We implemented our NAT with AMD (Xilinx) Zynq UltraScale+ MPSoC ZCU102 (called the board later). The evaluation setup includes the board, a router, and a desktop machine.
-We run a Linux \todo{Version} on the four PS ARM cores of the board. 
-The desktop runs Ubuntu 18.04 equipped with a Nvidia (Mellanox) ConnectX-3, 
-whose line rate reaches 10Gbps, with \verb|mlx4| driver version \verb|4.14.142-ubwins+|. The MTU is configured as 9000B to get full performance.
+The board runs Linux 4.19.0 on its four PS ARM cores. 
+The desktop runs Ubuntu 18.04 equipped with Intel i7-9700K and an NVIDIA (Mellanox) ConnectX-3, 
+whose line rate reaches 10Gbps, with \verb|mlx4| driver version 4.14.142-ubwins+. The MTU is configured as 9000B to get full performance.
 The performance of the router is not critical since we only use it to ssh connect to the board.
 
 
@@ -12,19 +12,17 @@ The performance of the router is not critical since we only use it to ssh connec
 
 
 \textbf{Network Topology.} 
-The board and the on-board NIC of the desktop are both connected to the router and 
-are configured under the same subnet. 
-For the data plane, we connect the SPF interface of the board and an interface of ConnectX-3 back-to-back to fully investigate the potential of our FPGA NAT.
+The board's 1Gbps interface and the on-board NIC of the desktop are both connected to the router and are configured under the same subnet. 
+For the data plane, we connect the 10Gbps interface of the board and an interface of ConnectX-3 back-to-back to fully investigate the potential of our FPGA NAT.
 
 \subsection{Implementation Workflow}
 
 
 \begin{figure*}[h]
-    \label{fig:workflow}
     \centering
     \includegraphics[width=500pt]{images/implworkflow.pdf}
     \caption{Our implementation workflow. }
-    \Description{111}
+    \label{fig:workflow}
 \end{figure*}
 
 We elaborate on our detailed implementation workflow, which includes Verilog design and testing, Vivado block design, Petalinux image building, testbed deployment, and Vitis cross-compile in this subsection. We use Vivado 19.02, Vitis 19.02, and Petalinux 19.02. Figure \ref{fig:workflow} shows our workflow.

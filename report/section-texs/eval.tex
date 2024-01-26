@@ -12,8 +12,6 @@ With four settings above, we do two evaluations:
 
 
 
-% \textbf{We do not measure the latency.} HW NAT introduces minimal latency overhead compared to no NAT. The overhead is predictable, averaging only a few cycles. The maximum value ?? accounts for only a small fraction (??\%) of the total latency. And since the average latency is very small, we could not measure it accurately with our devices.
-
 \subsection{Evaluation Setting}
 
 We detail our settings in two evaluations here. The connection hash table size is configured as 1024 for both evaluations. A traffic generator written in C language continuously sends TCP packets to the desktop machine via a Linux packet socket to the 10GbE interface of the board, which will flow through PL, in an infinite loop. The throughput is measured by dividing the data amount over the time of sending it. The data amount is set to 100 gigabits.
@@ -26,29 +24,37 @@ The details of the four settings are:
     \item {\textbf{w/o NAT}}: No NAT at all, packets are directly forwarded between MAC/GTH and DMA. This is the ideal scenario and can be used as an upper bound to evaluate the performance of our system.
 \end{itemize}
 
+
+\textbf{Latency.} We do not measure the latency since the overhead of HW NAT is predictable, averaging only constant cycles when the load factor is much lower than the table size. Even in extreme situations where the load factor is 1, the maximum latency is only $tableSize \times cycleTime$, which is less than 10 $\mu s$ when the table size is 1024. 
+It only accounts for about 10\% of the normal ping-pong latency (100-200 $\mu s$, measured with \verb|ping| command). 
+
+
+
+
 \subsection{Result}
 
 \begin{figure}
     \includegraphics[width=\linewidth]{images/Result1.png}
-    \caption{Result1}
-    \Description{1}
+    \caption{Thput. v.s. pkt size}
+    % \Description{1}
+    \label{fig:thputpktsize}
 \end{figure}
 
-Figure 1?? shows the relationship between throughput and packet size. As the packet size increases, the throughput also increases, until it reaches a maximum value at around 4000 bytes, and then suddenly drops. This phenomenon is observed for all scenarios.
+Figure \ref{fig:thputpktsize} shows the relationship between throughput and packet size. As the packet size increases, the throughput also increases, until it reaches a maximum value at around 4000 bytes, and then suddenly drops. This phenomenon is observed in all four settings.
 
-\begin{figure}
+\begin{figure}[t]
     \includegraphics[width=\linewidth]{images/Result2.png}
-    \caption{Result2}
-    \Description{2}
+    \caption{Thput v.s. Connections \#}
+    \label{fig:thputconn}
 \end{figure}
 
-Figure 2?? shows the relationship between throughput and number of connections. As the number of connections increases, the throughput of SW NAT drops sharply, while the throughput of other scenarios remains stable. 
+Figure \ref{fig:thputconn} shows the relationship between throughput and the number of connections. As the number of connections increases, the throughput of SW NAT drops sharply, while the throughput of other scenarios remains stable. 
 
 \subsection{Interpretation}
 
-In Figure 1??, we can see that SW NAT has a performance gap with no NAT, indicating that SW NAT is a bottleneck that degrades the overall system performance. We can also see that HW NAT has a performance improvement compared to SW NAT, indicating that hardware implementation has better performance than software. And there's almost no performance gap between HW NAT and no NAT, which indicates that hardware implementation has little impact on the original system performance.
+In Figure \ref{fig:thputpktsize}, we can see that SW NAT has a performance gap with no NAT, indicating that SW NAT is a bottleneck that degrades the overall system performance. We can also see that HW NAT has a performance improvement compared to SW NAT, indicating that hardware implementation has better performance than software. And there's almost no performance gap between HW NAT and no NAT, which indicates that hardware implementation has little impact on the original system performance.
 
-Figure 2?? shows that SW NAT does not scale well with the number of connections, due to the CPU overhead of software NAT and the synchronization overhead of sharing the NAT table. On the other hand, HW NAT scales well with the number of connections, as it uses a bidirectional hash table and the arbiter design to handle the NAT mappings.
+Figure \ref{fig:thputconn} shows that SW NAT does not scale well with the number of connections, due to the CPU overhead of software NAT and the synchronization overhead of sharing the NAT table. On the other hand, HW NAT scales well with the number of connections, as it uses a bidirectional hash table and the arbiter design to handle the NAT mappings.
 
 \subsection{Anomalies}
 There are two anomalies in our evaluation results. We try to give some speculative guesses about them.
