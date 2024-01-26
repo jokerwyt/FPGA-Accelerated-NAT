@@ -1,5 +1,4 @@
 We show the evaluation of our NAT system in this section.
-
 SW and HW NAT implementation are considered (referred to as SW NAT and HW NAT). Two ablation settings (HW NAT without translation, without NAT) are introduced to measure the overhead of our HW NAT design.
 With four settings above, we do two evaluations:
 \begin{itemize}
@@ -44,12 +43,19 @@ Figure \ref{fig:thputpktsize} shows the relationship between throughput and pack
 Figure \ref{fig:thputconn} shows the relationship between throughput and the number of connections. As the number of connections increases, the throughput of SW NAT drops sharply, while the throughput of other scenarios remains stable. 
 
 \subsection{Interpretation}
+We draw three main conclusions from our results:
+\begin{itemize}
+    \item \todo{\textbf{The performance of HW NAT is 7.7\% higher than SW NAT.}}
+    \item \textbf{Figure \ref{fig:thputpktsize} shows that SW NAT is a bottleneck and HW NAT is not.}
+    In Figure \ref{fig:thputpktsize}, we can see that SW NAT has a performance gap with no NAT, indicating that SW NAT is a bottleneck that degrades the overall system performance. We can also see that HW NAT has a performance improvement compared to SW NAT, indicating that hardware implementation has better performance than software. And there's almost no performance gap between HW NAT and no NAT, which indicates that hardware implementation has little impact on the original system performance.
+    \item \textbf{Figure \ref{fig:thputconn} shows that SW NAT is unscalable and HW NAT is scalable.}
+    SW NAT does not scale well with the number of connections, due to the CPU overhead of software NAT and the synchronization overhead of sharing the NAT table. On the other hand, HW NAT scales well with the number of connections, as it uses a bidirectional hash table and the arbiter design to handle the NAT mappings.
+\end{itemize}
 
-\textbf{Figure \ref{fig:thputpktsize} shows that SW NAT is bottleneck and HW NAT is not.}
-In Figure \ref{fig:thputpktsize}, we can see that SW NAT has a performance gap with no NAT, indicating that SW NAT is a bottleneck that degrades the overall system performance. We can also see that HW NAT has a performance improvement compared to SW NAT, indicating that hardware implementation has better performance than software. And there's almost no performance gap between HW NAT and no NAT, which indicates that hardware implementation has little impact on the original system performance.
 
-\textbf{Figure \ref{fig:thputconn} shows that SW NAT is unscalable and HW NAT is scalable.}
-SW NAT does not scale well with the number of connections, due to the CPU overhead of software NAT and the synchronization overhead of sharing the NAT table. On the other hand, HW NAT scales well with the number of connections, as it uses a bidirectional hash table and the arbiter design to handle the NAT mappings.
+
+
+
 
 \subsection{Anomalies}
 There are two anomalies in our evaluation results. We try to give some speculative guesses about them.
