@@ -4,7 +4,7 @@
     \caption{System design}
     \Description{}
 \end{figure*}
-    We show our system design in this section. Our design is based on the official example of the Ethernet 10/25G system of Xilinx (called the original design later). \footnote{https://github.com/Xilinx-Wiki-Projects/ZCU102-Ethernet/tree/main/2019.2/pl\_eth\_10g}
+    We show our system design in this section. Our design is based on the official example of the Ethernet 10/25G system of Xilinx (referred to as the original design later). \footnote{https://github.com/Xilinx-Wiki-Projects/ZCU102-Ethernet/tree/main/2019.2/pl\_eth\_10g}
 
 \subsection{Original Block Design}
     Before we elaborate on our design, it is necessary to show how is the original design organized as a background.
@@ -53,3 +53,7 @@
     The Calc module computes the new checksum value based on the modified packet and outputs the new checksum value and the original packet to FIFO1 and FIFO2 respectively.
     The FIFO1 and FIFO2 modules are two FIFO buffers that store the new checksum value and the original packet respectively. They are used to buffer the data, waiting for the Align module to fetch. 
     The Align module is responsible for writing the new checksum value into the TCP header of the packet. It reads the data from FIFO1 and FIFO2 and locates the TCP checksum field to replace the old checksum value with the new one.
+
+
+\subsection{Put It All Together}
+\todo{claim: clock frequency and clock domain, how TX \& RX, NAT IP, CSU IP, and DMA and MAC/GTH connect and interact with each other}
