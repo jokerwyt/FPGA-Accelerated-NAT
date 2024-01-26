@@ -1,4 +1,5 @@
 We show the evaluation of our NAT system in this section.
+
 SW and HW NAT implementation are considered (referred to as SW NAT and HW NAT). Two ablation settings (HW NAT without translation, without NAT) are introduced to measure the overhead of our HW NAT design.
 With four settings above, we do two evaluations:
 \begin{itemize}
@@ -8,11 +9,7 @@ With four settings above, we do two evaluations:
 
 % with two dimension (different packet sizes and different numbers of connections).
 
-
-
-
-
-% \textbf{We do not measure the latency.} HW NAT introduces minimal latency overhead compared to no NAT. The overhead is predictable, averaging only a few cycles. The maximum value ?? accounts for only a small fraction (??\%) of the total latency. And since the average latency is very small, we could not measure it accurately with our devices.
+\textbf{We do not measure the latency.} HW NAT introduces minimal latency overhead compared to no NAT. The overhead is predictable, averaging only a few cycles. The maximum value ?? accounts for only a small fraction (??\%) of the total latency. And since the average latency is very small, we could not measure it accurately with our devices.
 
 \subsection{Evaluation Setting}
 
@@ -28,21 +25,23 @@ The details of the four settings are:
 
 \subsection{Result}
 
-\begin{figure}
+\begin{figure}[ht]
     \includegraphics[width=\linewidth]{images/Result1.png}
-    \caption{Result1}
+    \caption{throughput with different packet sizes}
+    \label{fig:result1}
     \Description{1}
 \end{figure}
 
-Figure 1?? shows the relationship between throughput and packet size. As the packet size increases, the throughput also increases, until it reaches a maximum value at around 4000 bytes, and then suddenly drops. This phenomenon is observed for all scenarios.
-
-\begin{figure}
+\begin{figure}[ht]
     \includegraphics[width=\linewidth]{images/Result2.png}
-    \caption{Result2}
+    \caption{throughput with different numbers of connections}
+    \label{fig:result2}
     \Description{2}
 \end{figure}
 
-Figure 2?? shows the relationship between throughput and number of connections. As the number of connections increases, the throughput of SW NAT drops sharply, while the throughput of other scenarios remains stable. 
+Figure \ref{fig:result1} shows the relationship between throughput and packet size. As the packet size increases, the throughput also increases, until it reaches a maximum value at around 4000 bytes, and then suddenly drops. This phenomenon is observed for all scenarios.
+
+Figure \ref{fig:result2} shows the relationship between throughput and number of connections. As the number of connections increases, the throughput of SW NAT drops sharply, while the throughput of other scenarios remains stable. 
 
 \subsection{Interpretation}
 

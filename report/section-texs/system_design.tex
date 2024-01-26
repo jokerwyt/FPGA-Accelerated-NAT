@@ -2,6 +2,7 @@
     \centering
     \includegraphics[width=\linewidth]{images/design.png}
     \caption{System design}
+    \Description{}
 \end{figure*}
     We show our system design in this section. Our design is based on the official example of the Ethernet 10/25G system of Xilinx (called the original design later). \footnote{https://github.com/Xilinx-Wiki-Projects/ZCU102-Ethernet/tree/main/2019.2/pl\_eth\_10g}
 
@@ -18,12 +19,18 @@
     \end{itemize}
 
     \textbf{Data flow.} MAC and GTH are responsible for the transmission of data between the FPGA and the external network. Upon receiving incoming data from MAC and GTH, the DMA takes control of the data transfer process and moves it into the designated memory location. This stored data can be further processed by the processor or other components of the system.
+
 \subsection{TX and RX}
-\todo{TX and RX are used to catch the 5-tuple, send it to NAT IP, receive response from NAT IP and replace the original 5-tuple with response. }
+
+    Based on the original block design, we introduce TX and RX to intercept the communication between the MAC/GTH and DMA. TX intercepts the communication from DMA to MAC/GTH, and RX intercepts the communication from MAC/GTH to DMA. Both TX and RX check whether the incoming packet is a TCP packet or not. 
+    
+    If the packet is not a TCP packet, TX and RX will simply forward the packet out.
+
+    If the packet is a TCP packet, both TX and RX will extract the 5-tuple information from the packet, send it to NAT IP and wait for a 5-tuple response from NAT IP. Upon receiving the response, TX and RX will modify the header of packet according to the 5-tuple received, and then forward the packet out.
 
 \subsection{NAT IP}
 
-    Based on the original block design, we introduce a NAT (Network Address Translation) IP to intercept the communication between the MAC/GTH and DMA. Our NAT IP modifies the IP and TCP headers of the packets according to the NAT rules and maintains a bidirectional hash table to store the mappings between LAN 5 tuple and WAN 5 tuple.
+    We introduce a NAT (Network Address Translation) IP to help TX and RX modify the IP and TCP headers of the packets according to the NAT rules. Our NAT IP maintains a bidirectional hash table to store the mappings between LAN 5-tuple and WAN 5-tuple. It communicates with TX and RX through a simple interface. 
 
     \textbf{Hash Function.} The NAT IP uses XOR operation on the 5-tuple \emph{(source IP, source port, destination IP, destination port, protocol)} as its hash function. This approach provides a quick and effective way to generate hash values for mapping.
 
