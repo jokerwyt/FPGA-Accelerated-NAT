@@ -1,17 +1,7 @@
-% ○discussion & future work：
-% ■更好的实现方式：
-% ●完全不经过PS
-% ●more advanced NAT designs?
-% ●
-% ■更好的实验设计：
-% ●FPGA性能弱对实验的影响
-% ●软件NAT的实现方式对性能的影响
-% ●实验不够详尽？还有什么关键的实验：
+In this section, we discuss potential enhancements to our system design and evaluation.
 
-In this section, we will discuss some possible improvements in our system design and evaluation.
+\textbf{Improved Evaluation Method: Bypassing Processing System (PS).} Our evaluation results reveal that the limited performance of the ZCU102 PS hardware hampers a comprehensive exploration of our hardware design's potential. To obtain more accurate evaluation results, bypassing the PS section of the board could be a more viable option. Specifically, processed Ethernet packets could be redirected to another SFP interface after undergoing processing by our custom IPs in the PL logic, avoiding involvement with the underpowered ARM CPUs.
 
-\textbf{Better evaluation method: bypassing PS.} Our evaluation result shows that the weak performance of ZCU102 PS hardware prevents it from fully investigating the potential of our hardware design. Thus, bypassing the PS part of the board may be a better choice to get precise evaluation results. To be specific, the received Ethernet packets should be sent back to another SFP interface after they are processed by our custom IPs in the PL logic, instead of passing them to those weak ARM CPUs.
+\textbf{Enhanced NAT Design for Performance and Resource Efficiency.} Linear probing requires fewer resources at the cost of wasting more cycles. We can harness hardware parallelism by introducing structures like a fully associative cache in our NAT table, promising one-cycle latency. Additionally, implementing a RAM matrix may further reduce interconnect consumption.
 
-\textbf{More performant and resource-efficient NAT design.} Linear probing requires fewer resources at the cost of wasting more cycles. We can utilize the hardware parallelism by introducing structures like a full-associated cache in our NAT table which promises one cycle latency. In addition, we can implement a RAM matrix to further reduce interconnect consumption. 
-
-\textbf{Lack of connection state management.} A functional NAT should track connection states to release the NAT table entries in time. Due to the project time limit, we just discussed and came up with a possible design but did not implement this part. 
+\textbf{Addressing Connection State Management.} A fully functional NAT should track connection states to release NAT table entries in a timely manner. Due to project time constraints, we discussed and proposed a possible design for this aspect but did not implement it.

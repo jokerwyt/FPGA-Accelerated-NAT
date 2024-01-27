@@ -1,42 +1,22 @@
+Network Address Translation (NAT) serves as a crucial network function bridging the gap between local-area networks (LANs) and wide-area networks (WANs). Its primary function involves tracking Layer 4 connections, specifically for protocols like TCP and UDP. NAT achieves transparent address reuse for various clients within a LAN by translating IP addresses and ports. While software-based NAT implementation is convenient, handling massive data traffic, such as at speeds exceeding 10Gbps, can lead to significant CPU resource wastage and high packet latency.
 
-% Motivation+problem statement
+To address these challenges, the common approach is to offload NAT functionality into dedicated hardware, such as switches and network interface cards (NICs). However, the implementation of switches and NICs typically relies on application-specific integrated circuits (ASICs), resulting in a lengthy and expensive cycle from design to production. Consequently, vendors may refrain from incorporating NAT functionality into certain products with a limited audience, such as high-performance wireless NICs.
 
-% Prior work
+\textbf{Motivation \& Key Ideas.}
+Given these circumstances, the Field Programmable Gate Array (FPGA) emerges as a natural consideration. FPGA enables users to implement custom hardware logic, including NAT. In this project, we aim to explore the feasibility of implementing NAT in an FPGA, showcasing the performance gains achievable through hardware-oriented design.
 
-% Key ideas
+\textbf{Prior Works.}
+Our survey of prior works includes examining alternative hardware offloading approaches and advanced NAT designs. Programmable switches, with P4 language support for line-rate match-action processing, provide a natural avenue for implementing NAT. Examples can be found in the P4 language code for NAT at the footnote link\footnote{https://github.com/p4lang/switch/blob/master/p4src/nat.p4}. Additionally, some high-performance NICs, such as Nvidia (Mellanox) ConnectX-4/5/6, can support NAT offloading with proper configuration; however, these are primarily designed for wired NICs in data center networks. Previous attempts to implement NAT on FPGAs, such as the NetFPGA platform, are also documented, and more details can be found in the footnote link\footnote{https://www.cl.cam.ac.uk/~osc22/docs/edv10\_nat\_fpga.pdf}.
 
-% Evaluation results
-
-% Contribution summary
-
-% \textbf{Background.}
-NAT is a common network function between local-area network (LAN) and wide-area
-network (WAN). 
-It tracks L4 connections (i.e. TCP and UDP), translates IP addresses and ports to 
-provide transparent address reuse for different clients in LAN.
-Implementing NAT in software is convenient, but the massive data traffic (10Gbps or higher) will incur luxurious CPU waste and high packet latency. Therefore, it's common to offload NAT down into hardware such as switches and network interface cards (NIC). 
-However, switches and NICs are usually implemented via application-specific integrated circuit (ASIC) which requires a long and expensive cycle from design to production. That makes vendors refuse to put such function into some products with a small audience, such as performant wireless NIC. 
-
-
-
-\textbf{Motivation \& key ideas.} 
-Under the circumstances above, the Field Programmable Gate Array (FPGA) comes into consideration naturally. 
-It allows users to implement custom hardware logic including NAT. Therefore, in this project, we explore the possibility of implementing NAT in FPGA and show the performance gain from hardware-oriented design. 
-
-\textbf{Prior works.} We survey prior works including other hardware offloading approaches and advanced NAT designs. Programmable switches with P4 language support line-rate match-action processing by which NAT can be implemented naturally. 
-\footnote{https://github.com/p4lang/switch/blob/master/p4src/nat.p4}
-Some high-performance NICs such as Nvidia (Mellanox) ConnectX-4/5/6 can support NAT offloading itself with proper configuration. However, they are all wired NICs for the data center network.
-There are also already some trials to implement NAT on FPGA such as the NetFPGA platform. More details can be found at the footnote link.
-\footnote{https://www.cl.cam.ac.uk/~osc22/docs/edv10\_nat\_fpga.pdf}
-
-\textbf{Evaluation Results.} In our evaluation, FPGA-based NAT shows up to 7.7\% performance gain in throughput than software-based NAT and better scalability over connection numbers (i.e. the load factor).
+\textbf{Evaluation Results.}
+In our evaluation, FPGA-based NAT demonstrates a performance gain of up to 7.7\% in throughput compared to software-based NAT. Additionally, it exhibits better scalability concerning connection numbers, emphasizing its efficacy under varying load factors.
 
 \subsection{Contribution Summary}
 \begin{itemize}
-    \item Exploration and System Design: Yongtong Wu
-    \item Hardware Impl. and Testing: Rilin Huang, Yongtong Wu
-    \item Software and Testbed Configuration: Jialiang Zhang
-    \item Evaluation \& Live Demo Video: Yongtong Wu
-    \item Poster: Jialiang Zhang
-    \item Report Writing: Rilin Huang, Yongtong Wu
+\item \textit{Exploration and System Design:} Yongtong Wu
+\item \textit{Hardware Impl. and Testing:} Rilin Huang, Yongtong Wu
+\item \textit{Software and Testbed Configuration:} Jialiang Zhang
+\item \textit{Evaluation \& Live Demo Video:} Yongtong Wu
+\item \textit{Poster:} Jialiang Zhang
+\item \textit{Report Writing:} Rilin Huang, Yongtong Wu
 \end{itemize}
