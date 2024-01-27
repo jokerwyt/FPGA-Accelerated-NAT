@@ -21,28 +21,28 @@
 
     \textbf{Data flow.} MAC and GTH are responsible for the transmission of data between the FPGA and the external network. Upon receiving incoming data from MAC and GTH, the DMA takes control of the data transfer process and moves it into the designated memory location. This stored data can be further processed by the processor or other components of the system.
 
-    \textbf{Signals.} These signals are all interface signals that follow the AXI4-Stream protocol, which is used to transfer streaming data between different modules.
+    \textbf{AXI4-Stream Signals.} Most signals between the modules above adopt the AXI4-Stream protocol. AXI4-Stream interfaces appear in pairs: the slave port (start with \verb|s_| below) and the master port (start with \verb|m_| below). 
+    The most important handshake mechanism is the \verb|ready| signal of the slave and the \verb|valid| signal of the master. Once these two signals are both active, there is a data transfer. To provide more information, we show the exact definitions of them here.
 
     \begin{itemize}
-    \item {s\_axis\_tdata[63:0]}: a data bus received from the master device, providing the data across the interface.
-    \item {s\_axis\_tkeep[7:0]}: a byte qualifier received from the master device, indicating whether the corresponding bytes of \emph{s\_axis\_tdata} are part of the data stream or not. A low level indicates that the corresponding byte is an invalid byte.
-    \item {s\_axis\_tvalid}: a signal received from the master device, indicating that it is driving a valid data transfer.
-    \item {s\_axis\_tlast}: a signal received from the master device, indicating that this is the last data transfer, marking the boundary of the data stream.
-    \item {s\_axis\_tready}: a signal sent to the master device, indicating that it can accept a data transfer in the current clock cycle.
-    \item {m\_axis\_tdata[63:0]}: a data bus sent to the slave device, providing the data across the interface.
-    \item {m\_axis\_tkeep[7:0]}: a byte qualifier sent to the slave device, indicating whether the corresponding bytes of \emph{m\_axis\_tdata} are part of the data stream or not. A low level indicates that the corresponding byte is an invalid byte.
-    \item {m\_axis\_tvalid}: a signal sent to the slave device, indicating that it is receiving a valid data transfer.
-    \item {m\_axis\_tlast}: a signal sent to the slave device, indicating that this is the last data transfer, marking the boundary of the data stream.
-    \item {m\_axis\_tready}: a signal received from the slave device, indicating that it can send a data transfer in the current clock cycle.
+        \item {\verb|s_axis_tdata[63:0]|}: Data bus received from the master device, conveying data across the interface.
+        \item {\verb|s_axis_tkeep[7:0]|}: Byte qualifier received from the master device, indicating whether corresponding bytes of the data bus are part of the data stream. A low level indicates an invalid byte.
+        \item {\verb|s_axis_tvalid|}: Signal received from the master device, indicating a valid data transfer.
+        \item {\verb|s_axis_tlast|}: Signal received from the master device, marking the last data transfer and indicating the boundary of the data stream.
+        \item {\verb|s_axis_tready|}: Signal sent to the master device, indicating its readiness to accept a data transfer in the current clock cycle.
+        \item {\verb|m_axis_tdata[63:0]|}: Data bus sent to the slave device, providing data across the interface.
+        \item {\verb|m_axis_tkeep[7:0]|}: Byte qualifier sent to the slave device, indicating whether corresponding bytes of \verb|m_axis_tdata| are part of the data stream. A low level indicates an invalid byte.
+        \item {\verb|m_axis_tvalid|}: Signal sent to the slave device, indicating the reception of a valid data transfer.
+        \item {\verb|m_axis_tlast|}: Signal sent to the slave device, marking the last data transfer and indicating the boundary of the data stream.
+        \item {\verb|m_axis_tready|}: Signal received from the slave device, indicating its readiness to send a data transfer in the current clock cycle.
     \end{itemize}
+    
 
 \subsection{TX and RX}
 
     Based on the original block design, we introduce TX and RX to intercept the communication between the MAC/GTH and DMA. TX intercepts the communication from DMA to MAC/GTH, and RX intercepts the communication from MAC/GTH to DMA. Both TX and RX check whether the incoming packet is a TCP packet or not. 
     
-    If the packet is not a TCP packet, TX and RX will simply forward the packet out.
-
-    If the packet is a TCP packet, both TX and RX will extract the 5-tuple information from the packet, send it to NAT IP and wait for a 5-tuple response from NAT IP. Upon receiving the response, TX and RX will modify the header of packet according to the 5-tuple received, and then forward the packet out.
+    If the packet is not a TCP packet, TX and RX will simply forward the packet out. Otherwise (i.e. the packet is a TCP packet), both TX and RX will extract the 5-tuple information from the packet, send it to NAT IP, and wait for a 5-tuple response from NAT IP. Upon receiving the response, TX and RX will modify the header of the packet according to the 5-tuple received, and then forward the packet out.
 
 \subsection{NAT IP}
 
@@ -73,16 +73,11 @@
 
 \subsection{Put It All Together}
 
-    All the components of our system design work together to achieve the functionality of a hardware-based NAT system in Figure \ref{fig:design}. Their clock are all synchronized with \emph{tx\_clk\_out} of MAC/GTH.
+    All the components of our system design work together to achieve the functionality of a hardware-based NAT system in Figure \ref{fig:design}. Their clocks are all synchronized with \emph{tx\_clk\_out} of MAC/GTH (156Mhz, achieving 10Gbps with a 64-bit data bus).
 
-    An imcoming TCP packet gets processed by the following workflow:
-
-    RX first extracts the IP and TCP headers from the \emph{s\_axis\_tdata} signal, including the source IP, source port, destination IP, destination port, and protocol, to form a 5-tuple.
-
-    RX then sends this 5-tuple to the NAT IP core, through a simple interface only with 5-tuple and a valid signal.
-
-    After sending the 5-tuple, RX blocks its input by setting the \emph{s\_axis\_tdata} signal to 0, indicating that it cannot accept new data. Meanwhile, it waits for the response from the NAT IP core.
-
-    When the NAT IP core returns a new 5-tuple to RX, RX modify the header of packet accordingly and continue receiving data normally.
-
-    All packets from RX are sent to CSU to update the TCP checksum, and finally get into DMA. 
+    An incoming TCP packet gets processed by the following workflow:
+    ① Firstly, RX extracts the IP and TCP headers from the \emph{s\_axis\_tdata} signal, including the source IP, source port, destination IP, destination port, and protocol, to form a 5-tuple.
+    ② Then, RX sends this 5-tuple to the NAT IP core, through a simplified interface only with a 5-tuple and a valid signal.
+    ③ After sending the 5-tuple, RX blocks its input by setting the \emph{s\_axis\_tdata} signal to 0, indicating that it cannot accept new data. Meanwhile, it waits for the response from the NAT IP core.
+    ④ When the NAT IP core returns a new 5-tuple to RX, RX modifies the header of the packet accordingly and continues receiving data normally.
+    ⑤ All packets from RX are sent to CSU to update the TCP checksum, and finally get into DMA. 
